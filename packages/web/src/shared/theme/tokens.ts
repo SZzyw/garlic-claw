@@ -1,7 +1,5 @@
 import type { ThemePreset, ThemeModeConfig, TokenMap } from './types'
 import { PRIMITIVE } from './registry'
-import { atmosphereSamples } from '@/shared/atmosphere/samples'
-import type { SampledColors } from '@/shared/atmosphere/types'
 
 /**
  * SINGLE color entry point. Generates ALL base colors in oklch().
@@ -23,7 +21,7 @@ import type { SampledColors } from '@/shared/atmosphere/types'
  * Atmosphere NEVER enters card/background/main surface directly.
  * It only enters aura, edge glow, modal bloom, hover bloom, overlay ambient.
  */
-export function computePrimitives(
+export function computeThemeBase(
   preset: ThemePreset,
   modeConfig: ThemeModeConfig,
   overrides?: {
@@ -56,7 +54,6 @@ export function computePrimitives(
   const mutedC = textChroma(s, isDark)
   const accentC = accentChroma(s)
   const borderC = borderChroma(s, isDark)
-  const atmoC = atmosphereChroma(s)
 
   // Lightness values with brightness offset applied
   const bgL = clampL(modeConfig.backgroundLightness + deltaL)
@@ -65,15 +62,6 @@ export function computePrimitives(
   const borderL = clampL(modeConfig.borderLightness + deltaL)
   const mutedFgL = clampL(modeConfig.mutedForegroundLightness + deltaL)
   const accentL = clampL(accentLit + deltaL)
-
-  // Atmosphere lightness: midpoint between card and foreground
-  const atmoL = clampL((cardL + fgL) / 2)
-
-  // ── Wallpaper-sampled atmosphere override ──
-  const wallAtmo: SampledColors | null = atmosphereSamples.value
-  const atmoHue = wallAtmo ? wallAtmo.accentHue : accentHue
-  const atmoSat = wallAtmo ? wallAtmo.accentSaturation : (s / 100)
-  const wallpaperAtmoC = wallAtmo ? wallAtmo.accentSaturation * 0.12 : atmoC
 
   return {
     // ── Base ──
@@ -116,25 +104,8 @@ export function computePrimitives(
     [PRIMITIVE.glassBg]: oklch(clampL(cardL + 2), bgC * 0.4, h, 0.55 * glassRatio),
     [PRIMITIVE.glassBorder]: oklch(borderL, borderC * 0.5, h, 0.35 * glassRatio),
 
-    // ── Atmosphere: visible edge-air — blends wallpaper samples when available ──
-    // When wallpaper sampling is active, these use the wallpaper's accent hue/chroma
-    // instead of the theme's accent.  This makes the UI feel "lit" by the wallpaper.
-    [PRIMITIVE.atmosphere1]: oklch(atmoL, wallpaperAtmoC * 0.3, atmoHue, 0.08 * glowRatio),
-    [PRIMITIVE.atmosphere2]: oklch(atmoL, wallpaperAtmoC * 0.6, atmoHue, 0.18 * glowRatio),
-    [PRIMITIVE.atmosphere3]: oklch(atmoL, wallpaperAtmoC * 0.9, atmoHue, 0.28 * glowRatio),
-
-    // ── Atmosphere glow: brighter, more saturated — used for focal bloom ──
-    [PRIMITIVE.atmosphereGlow]: oklch(
-      wallAtmo ? clampL(wallAtmo.accentLightness + 8) : clampL(accentL + 5),
-      wallAtmo ? wallAtmo.accentSaturation * 0.16 : accentC * 0.3,
-      atmoHue,
-      0.20 * glowRatio
-    ),
-
-    // ── Glass reflection: linear gradient for glass surface top sheen ──
-    [PRIMITIVE.glassReflection]: wallAtmo
-      ? `linear-gradient(180deg, oklch(${clampL(wallAtmo.accentLightness + 5).toFixed(1)}% ${(wallAtmo.accentSaturation * 0.08).toFixed(3)} ${wallAtmo.accentHue} / 0.08) 0%, transparent 12px)`
-      : `linear-gradient(180deg, var(${PRIMITIVE.surfaceTint}) 0%, transparent 8px)`,
+    // ── Glass reflection: theme-derived — atmosphere layer may override ──
+    [PRIMITIVE.glassReflection]: `linear-gradient(180deg, var(${PRIMITIVE.surfaceTint}) 0%, transparent 8px)`,
 
     // ── Surface Tint: environmental color wash (2-6% chroma at 18% alpha dark) ──
     // 30% of accent chroma, applied at card lightness — tints ALL surfaces uniformly
@@ -192,15 +163,6 @@ function accentChroma(s: number): number {
 function borderChroma(s: number, isDark: boolean): number {
   const max = isDark ? 0.028 : 0.022
   return Math.pow(s / 100, 2) * max
-}
-
-/**
- * Atmosphere chroma: linear growth — independent curve.
- * For ambient bloom: aura, edge glow, modal bloom, hover bloom, overlay ambient.
- * NEVER applied to card/background/main surface.
- */
-function atmosphereChroma(s: number): number {
-  return s / 100 * 0.08
 }
 
 // ── Clamp lightness to valid range ──

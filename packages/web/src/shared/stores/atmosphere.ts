@@ -4,6 +4,9 @@ import type { SampledColors, AtmosphereConfig } from '@/shared/atmosphere/types'
 import { DEFAULT_ATMOSPHERE_CONFIG } from '@/shared/atmosphere/types'
 import { extractColors } from '@/shared/atmosphere/colorExtractor'
 import { setAtmosphereSamples } from '@/shared/atmosphere/samples'
+import { setAtmosphereLightingTokens } from '@/shared/atmosphere/lighting-bridge'
+import { computeAtmosphereLighting } from '@/shared/atmosphere/lighting-tokens'
+import { type WeatherType } from '@/shared/atmosphere/weather'
 import { useWallpaperStore } from './wallpaper'
 
 const STORAGE_KEY = 'garlic-claw:atmosphere'
@@ -28,6 +31,7 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
   const lastError = ref<string | null>(null)
   const config = ref<AtmosphereConfig>(readConfig())
   const enabled = ref(true)
+  const weather = ref<WeatherType>('none')
 
   // ── Getters ──
   const hasSamples = computed(() => samples.value !== null)
@@ -37,6 +41,16 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
   const accentColor = computed(() => samples.value
     ? `oklch(${samples.value.accentLightness.toFixed(1)}% ${samples.value.accentSaturation.toFixed(3)} ${samples.value.accentHue.toFixed(1)})`
     : null)
+
+  /** Lighting tokens: computed from wallpaper sample + weather + config. */
+  const lightingTokens = computed(() => {
+    return computeAtmosphereLighting(
+      samples.value,
+      weather.value,
+      config.value.intensity,
+      config.value,
+    )
+  })
 
   // ── Actions ──
   async function sampleWallpaper(): Promise<void> {
@@ -84,6 +98,10 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
     setAtmosphereSamples(null)
   }
 
+  function setWeather(type: WeatherType): void {
+    weather.value = type
+  }
+
   function setConfig(partial: Partial<AtmosphereConfig>): void {
     config.value = { ...config.value, ...partial }
     writeConfig(config.value)
@@ -96,6 +114,11 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
 
   // ── Init ──
   function init(): void {
+    // Write lighting tokens to bridge for pipeline consumption
+    watch(lightingTokens, (tokens) => {
+      setAtmosphereLightingTokens(tokens)
+    }, { immediate: true })
+
     // Sample immediately if wallpaper is active
     sampleWallpaper()
 
@@ -117,11 +140,14 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
     lastError,
     config,
     enabled,
+    weather,
     hasSamples,
     dominantColor,
     accentColor,
+    lightingTokens,
     sampleWallpaper,
     clearSamples,
+    setWeather,
     setConfig,
     resetConfig,
     init,

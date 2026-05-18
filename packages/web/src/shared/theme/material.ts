@@ -1,8 +1,6 @@
 import type { TokenMap } from './types'
 import { PRIMITIVE, DEPTH } from './registry'
-import { atmosphereSamples } from '@/shared/atmosphere/samples'
 import { materialRuntimeConfig } from './material-config'
-import type { SampledColors } from '@/shared/atmosphere/types'
 
 /**
  * Compute all material-specific tokens from primitives, atmosphere samples,
@@ -19,9 +17,7 @@ export function computeMaterialTokens(primitives: TokenMap): TokenMap {
   const bgL = parseFloat(p(PRIMITIVE.lightness)) || 16
   const isDark = bgL < 50
   const glowRatio = parseFloat(p(PRIMITIVE.glowStrength)) || 0.5
-  const glassRatio = parseFloat(p(PRIMITIVE.glassOpacity)) || 0.5
 
-  const samples: SampledColors | null = atmosphereSamples.value
   const cfg = materialRuntimeConfig.value
 
   // ── Reflection intensity: config drives base, atmosphere glow amplifies ──
@@ -36,10 +32,10 @@ export function computeMaterialTokens(primitives: TokenMap): TokenMap {
   // Default at 40% → ~22px, subtle not heavy
   const blurPx = 8 + (cfg.blurDensity / 100) * 36
 
-  // ── Atmosphere temperature: determines reflection warm/cool tint ──
-  const atmoHue = samples ? samples.accentHue : h
-  // Clamp saturation to prevent color pollution from high-sat wallpapers (neon, etc.)
-  const rawAtmoSat = samples ? samples.accentSaturation : 0.05
+  // ── Atmosphere temperature: read from scalar tokens set by atmosphere layer ──
+  // Material does NOT import atmosphereSamples — reads merged token values instead.
+  const atmoHue = parseFloat(p('--atmosphere-hue') || p(PRIMITIVE.hue)) || h
+  const rawAtmoSat = parseFloat(p('--atmosphere-saturation') || '0.05') || 0.05
   const atmoSat = Math.min(rawAtmoSat, 0.40)
 
   // Warm (0–140, 300–360) vs Cool (160–280)
@@ -69,8 +65,8 @@ export function computeMaterialTokens(primitives: TokenMap): TokenMap {
   // Base alpha 0.010–0.045 — subtle, subconscious
   const reflAlpha = 0.015 + reflIntensity * 0.055
 
-  // Wallpaper luminance influences reflection strength
-  const wallLum = samples ? samples.averageLuminance : 50
+  // Atmosphere luminance influences reflection strength
+  const wallLum = parseFloat(p('--atmosphere-luminance') || '50') || 50
   const wallIsDark = wallLum < 40
   const wallIsLight = wallLum > 65
 

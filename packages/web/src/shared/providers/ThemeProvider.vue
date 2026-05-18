@@ -5,37 +5,30 @@
 <script setup lang="ts">
 import { provide, watch, onMounted, onUnmounted } from 'vue'
 import { useAppearanceStore } from '@/shared/stores/appearance'
-import { scheduleBatch } from '@/shared/theme/pipeline'
+import { useAtmosphereStore } from '@/shared/stores/atmosphere'
+import { useMaterialStore } from '@/shared/stores/material'
+import { startPipeline } from '@/shared/theme/pipeline'
 import { themePresets } from '@/shared/theme/constants'
 import { TOKEN_GROUPS } from '@/shared/theme/groups'
-import { themeDebug } from '@/shared/theme/debug'
 import { THEME_CONTEXT_KEY } from './theme-context'
 import type { ThemeContextValue } from './theme-context'
 
 const appearance = useAppearanceStore()
+const atmosphere = useAtmosphereStore()
+const material = useMaterialStore()
 
-// ── Initialize store on mount ──
+// ── Initialize stores on mount ──
 onMounted(() => {
   appearance.init()
+  atmosphere.init()
+  material.init()
 })
 
-// ── Runtime pipeline: batch-schedule token updates ──
-// scheduleBatch coalesces multiple updates within a single frame
-// and only applies changed properties (diff-based).
-watch(
-  () => appearance.tokens,
-  (tokens) => {
-    scheduleBatch(tokens)
-    if (import.meta.env.DEV) {
-      themeDebug.logApply(
-        Object.keys(tokens).length,
-        Object.keys(tokens).length, // diff details are internal to pipeline
-        0,
-      )
-    }
-  },
-  { immediate: true, deep: true },
-)
+// ── Start reactive graph pipeline ──
+// Watches three bridges (themeBase + atmosphereLighting + materialConfig)
+// and composes them into a single TokenMap applied to :root.
+// This replaces the old appearance.tokens watch.
+startPipeline()
 
 // ── Sync html class with resolvedMode ──
 watch(

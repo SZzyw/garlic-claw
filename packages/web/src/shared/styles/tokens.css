@@ -6,6 +6,14 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
+  /* ── Animation transitions (AppearanceSystem v3) ── */
+  /* Theme preset/mode switch: 200ms ease-out */
+  /* Hue change: CSS transition, no wallpaper resample */
+  transition: --gc-background 200ms ease-out,
+              --gc-card 200ms ease-out,
+              --gc-foreground 200ms ease-out,
+              --gc-primary 200ms ease-out;
+
   /* ── Surface tiers → delegated to dynamic depth tokens ── */
   --gc-surface-base: var(--gc-surface-base, rgba(20, 22, 30, 0.60));
   --gc-surface-elevated: var(--gc-surface-elevated, rgba(30, 33, 44, 0.76));

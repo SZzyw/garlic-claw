@@ -23,7 +23,7 @@ export { PRIMITIVE, ALIAS, DEPTH, ALIAS_TO_PRIMITIVE, PRIMITIVE_KEYS, ALIAS_KEYS
 export { TOKEN_GROUPS, GROUP_IDS, GROUP_LIST, TOKEN_TO_GROUP, getGroup, getTokenGroup } from './groups'
 
 // Token computation
-export { computePrimitives } from './tokens'
+export { computeThemeBase } from './tokens'
 export { computeAliases, computeAllTokens, validateAliases } from './aliases'
 export { computeLegacyTokens } from './legacy'
 export { computeDepthTokens } from './depth'
@@ -31,8 +31,11 @@ export { computeDepthTokens } from './depth'
 // Diff engine
 export { computeDiff } from './diff'
 
+// Composer
+export { composeTokens } from './composer'
+
 // Pipeline
-export { scheduleBatch, applySync, resetPipeline } from './pipeline'
+export { scheduleBatch, applySync, resetPipeline, startPipeline } from './pipeline'
 
 // Hydration
 export { hydrateTheme } from './hydration'

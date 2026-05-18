@@ -1,8 +1,9 @@
 import type { ThemeMode } from './types'
 import { STORAGE_KEY, DEFAULT_PRESET_ID, getPreset } from './constants'
-import { computePrimitives } from './tokens'
-import { computeAllTokens } from './aliases'
+import { computeThemeBase } from './tokens'
+import { composeTokens } from './composer'
 import { applySync, resetPipeline } from './pipeline'
+import { devFreezeTokens, computeTokenHash } from '@/shared/utils/freeze'
 
 const OLD_STORAGE_KEY = 'garlic-claw:theme'
 
@@ -44,8 +45,20 @@ export function hydrateTheme(): void {
     blurStrength: stored.customBlurStrength !== null ? stored.customBlurStrength / 100 : undefined,
   }
 
-  const primitives = computePrimitives(preset, modeConfig, overrides)
-  const allTokens = computeAllTokens(primitives)
+  const themeBase = computeThemeBase(preset, modeConfig, overrides)
+
+  // Freeze themeBase so it passes the composeTokens freeze check.
+  // Hydration must obey the same freeze contract as bridge setters.
+  devFreezeTokens(themeBase)
+
+  // Compose with empty atmosphere — async sampling results arrive later via pipeline
+  const allTokens = composeTokens(themeBase, {})
+
+  // Record hydration hash for pipeline first-compose comparison
+  const hydrationHash = computeTokenHash(allTokens)
+  if ((window as any).__GC_DEBUG__) {
+    ;(window as any).__GC_DEBUG__.hydrationHash = hydrationHash
+  }
 
   // 6. Apply tokens to :root synchronously
   applySync(allTokens)

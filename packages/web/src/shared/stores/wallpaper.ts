@@ -105,6 +105,31 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
     persist()
   }
 
+  // ── v3 Batch API ──
+
+  function setSource(source: { kind: typeof sourceKind.value; url: string }): void {
+    sourceKind.value = source.kind
+    sourceUrl.value = source.url
+    persist()
+  }
+
+  function setConfig(partial: {
+    displayMode?: typeof displayMode.value
+    adjustments?: Partial<WallpaperAdjustments>
+    overlays?: Partial<WallpaperOverlays>
+  }): void {
+    if (partial.displayMode !== undefined) {
+      displayMode.value = partial.displayMode
+    }
+    if (partial.adjustments) {
+      adjustments.value = { ...adjustments.value, ...partial.adjustments }
+    }
+    if (partial.overlays) {
+      overlays.value = { ...overlays.value, ...partial.overlays }
+    }
+    persist()
+  }
+
   function persist(): void {
     writePersisted(config.value)
   }
@@ -121,9 +146,11 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
     presets,
     applyPreset,
     setSourceUrl,
+    setSource,
     setDisplayMode,
     setOverlay,
     setAdjustment,
+    setConfig,
     resetAdjustments,
     resetAll,
   }

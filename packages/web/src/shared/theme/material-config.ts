@@ -5,7 +5,8 @@
  * (material.ts) reads from here to compute material tokens.
  *
  * This avoids a circular dependency between Pinia stores and the theme engine.
- * Pattern mirrors shared/atmosphere/samples.ts.
+ *
+ * Config objects use devFreezeTokens semantics — frozen in dev, passthrough in prod.
  */
 import { ref, readonly, type DeepReadonly } from 'vue'
 import type { MaterialRuntimeConfig } from './types'

@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { ThemeMode, ResolvedMode, ThemePreset, ThemeModeConfig } from '@/shared/theme/types'
 import { STORAGE_KEY, DEFAULT_PRESET_ID, getPreset } from '@/shared/theme/constants'
-import { computePrimitives } from '@/shared/theme/tokens'
+import { computeThemeBase } from '@/shared/theme/tokens'
 import { computeAllTokens } from '@/shared/theme/aliases'
+import { setThemeBaseTokens } from '@/shared/theme/theme-base-bridge'
+import { bumpThemeRecompute } from '@/shared/theme/pipeline'
 
 // ── Persistence helpers (pure, no dependencies) ──
 
@@ -103,9 +105,10 @@ export const useAppearanceStore = defineStore('appearance', () => {
 
   const effectiveBlurStrength = computed<number>(() => customBlurStrength.value ?? 50)
 
-  /** Primitive tokens computed from current preset + mode + overrides */
-  const primitiveTokens = computed(() => {
-    return computePrimitives(currentPreset.value, currentModeConfig.value, {
+  /** Theme base tokens: pure preset + mode + overrides. No atmosphere/wallpaper/weather. */
+  const baseTokens = computed(() => {
+    bumpThemeRecompute()
+    return computeThemeBase(currentPreset.value, currentModeConfig.value, {
       hue: customHue.value ?? undefined,
       saturation: customSaturation.value ?? undefined,
       brightness: effectiveBrightness.value,
@@ -115,9 +118,9 @@ export const useAppearanceStore = defineStore('appearance', () => {
     })
   })
 
-  /** Full token map: primitives + --gc-* aliases */
+  /** Full token map: theme base + --gc-* aliases (legacy compat until pipeline migration). */
   const tokens = computed(() => {
-    return computeAllTokens(primitiveTokens.value)
+    return computeAllTokens(baseTokens.value)
   })
 
   // ── Actions ──
@@ -230,6 +233,11 @@ export const useAppearanceStore = defineStore('appearance', () => {
       customBlurStrength.value = stored.customBlurStrength
     }
 
+    // Write theme base tokens to bridge for pipeline consumption
+    watch(baseTokens, (tokens) => {
+      setThemeBaseTokens(tokens)
+    }, { immediate: true })
+
     // Listen for system color-scheme changes
     if (typeof window !== 'undefined') {
       systemQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -258,7 +266,7 @@ export const useAppearanceStore = defineStore('appearance', () => {
     effectiveGlowStrength,
     effectiveGlassOpacity,
     effectiveBlurStrength,
-    primitiveTokens,
+    baseTokens,
     tokens,
     // Actions
     init,
