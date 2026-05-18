@@ -21,20 +21,13 @@ import GlassNoiseDef from '@/shared/components/GlassNoiseDef.vue'
 import ScreenEffectsRenderer from '@/modules/screen-effects/components/ScreenEffectsRenderer.vue'
 import ScreenEffectsFloatingToggle from '@/modules/screen-effects/components/ScreenEffectsFloatingToggle.vue'
 import { useScreenEffectsStore } from '@/modules/screen-effects/store/screen-effects'
-import { useAtmosphereStore } from '@/shared/stores/atmosphere'
-import { useMaterialStore } from '@/shared/stores/material'
 
-// Initialize screen effects store (restores persisted settings)
+// ── Screen effects: independent from AppearanceSystem v3 pipeline ──
+// Appearance/atmosphere/material stores are initialized by ThemeProvider.
+// ThemeProvider calls appearance.init() → atmosphere.init() → material.init() → startPipeline().
+// Init order is not a dependency — pipeline handles empty/default bridges gracefully.
 const fxStore = useScreenEffectsStore()
 fxStore.init()
-
-// Initialize atmosphere store (starts wallpaper color sampling)
-const atmoStore = useAtmosphereStore()
-atmoStore.init()
-
-// Initialize material store (pushes config to reactive bridge)
-const materialStore = useMaterialStore()
-materialStore.init()
 </script>
 
 <style>

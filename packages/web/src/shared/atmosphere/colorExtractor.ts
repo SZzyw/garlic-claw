@@ -150,7 +150,7 @@ function sampleImage(img: HTMLImageElement): SampledColors {
   const domG = ((Math.floor(dominantBin / BINS_PER_CHANNEL) % BINS_PER_CHANNEL) + 0.5) * BIN_SIZE
   const domB = ((dominantBin % BINS_PER_CHANNEL) + 0.5) * BIN_SIZE
 
-  const [domH, domS, domL] = rgbToOklch(domR, domG, domB)
+  const [domH, domS] = rgbToOklch(domR, domG, domB)
 
   // ── Accent color: most saturated among top 5 bins ──
   const topBins = getTopBins(bins, 5)

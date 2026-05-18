@@ -57,7 +57,7 @@ const material = useGlassMaterial({
 })
 
 const containerStyle = computed<StyleValue>(() => ({
-  ...material.container.value,
+  ...(material.container.value as Record<string, string>),
   borderRadius: props.borderRadius,
 }))
 </script>

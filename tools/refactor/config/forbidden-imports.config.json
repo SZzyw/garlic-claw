@@ -207,6 +207,82 @@
           "reason": "ai kernel must not depend on execution owner"
         }
       ]
+    },
+    "appearance-theme-isolation": {
+      "scanRoots": [
+        "packages/web/src/shared/theme"
+      ],
+      "extensions": [".ts", ".vue"],
+      "excludeSuffixes": [".spec.ts", "pipeline.ts"],
+      "specifierRules": [
+        {
+          "contains": "shared/atmosphere",
+          "reason": "Appearance v3: theme must not import atmosphere — pipeline.ts is the sole orchestrator exception"
+        },
+        {
+          "contains": "shared/wallpaper",
+          "reason": "Appearance v3: theme must not import wallpaper"
+        },
+        {
+          "contains": "modules/click-fx",
+          "reason": "Appearance v3: theme must not import click-fx"
+        }
+      ]
+    },
+    "appearance-pipeline-isolation": {
+      "scanRoots": [
+        "packages/web/src/shared/theme"
+      ],
+      "extensions": [".ts"],
+      "excludeSuffixes": [".spec.ts"],
+      "specifierRules": [
+        {
+          "contains": "shared/wallpaper",
+          "reason": "Appearance v3: pipeline.ts must not import wallpaper"
+        },
+        {
+          "contains": "modules/click-fx",
+          "reason": "Appearance v3: pipeline.ts must not import click-fx"
+        }
+      ]
+    },
+    "appearance-atmosphere-isolation": {
+      "scanRoots": [
+        "packages/web/src/shared/atmosphere"
+      ],
+      "extensions": [".ts", ".vue"],
+      "excludeSuffixes": [".spec.ts"],
+      "specifierRules": [
+        {
+          "contains": "shared/theme",
+          "reason": "Appearance v3: atmosphere must not import theme — use lighting-bridge for output"
+        },
+        {
+          "contains": "modules/click-fx",
+          "reason": "Appearance v3: atmosphere must not import click-fx"
+        }
+      ]
+    },
+    "appearance-clickfx-isolation": {
+      "scanRoots": [
+        "packages/web/src/modules/click-fx"
+      ],
+      "extensions": [".ts", ".vue"],
+      "excludeSuffixes": [".spec.ts"],
+      "specifierRules": [
+        {
+          "contains": "shared/theme",
+          "reason": "Appearance v3: click-fx must not import theme"
+        },
+        {
+          "contains": "shared/atmosphere",
+          "reason": "Appearance v3: click-fx must not import atmosphere"
+        },
+        {
+          "contains": "shared/stores",
+          "reason": "Appearance v3: click-fx must not import Pinia stores"
+        }
+      ]
     }
   }
 }

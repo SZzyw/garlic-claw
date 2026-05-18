@@ -203,7 +203,7 @@ const SURFACE_CONFIG: Record<string, {
  * Warm theme → warm shadow.  Cold theme → cold shadow.
  */
 function shadowOklch(
-  bgL: number,
+  _bgL: number,
   bgC: number,
   h: number,
   level: number, // 0=xs … 4=xl
@@ -254,7 +254,7 @@ const BORDER_CONFIG: Record<string, {
  * Scrollbar thumb color — derived from border lightness + surface chroma.
  */
 function scrollbarOklch(
-  bgL: number,
+  _bgL: number,
   bgC: number,
   h: number,
   isDark: boolean,
@@ -275,7 +275,7 @@ function scrollbarOklch(
  * Lightness adapts to dark/light mode.
  */
 function vignetteGradient(
-  bgL: number,
+  _bgL: number,
   bgC: number,
   h: number,
   isDark: boolean,
@@ -299,10 +299,7 @@ function vignetteGradient(
 // ═══════════════════════════════════════════════════════════
 
 /** Surface chroma from the same quadratic curve used in tokens.ts. */
-function surfaceChroma(isDark: boolean, sOverride?: number): number {
-  // sOverride is not used here — depth tokens read chroma from primitives
-  // which were already computed.  We use a default saturation of 18 for
-  // standalone depth computation (matches the fallback in tokens.ts).
+function surfaceChroma(isDark: boolean): number {
   const s = 18
   const max = isDark ? 0.020 : 0.014
   return Math.pow(s / 100, 2) * max
