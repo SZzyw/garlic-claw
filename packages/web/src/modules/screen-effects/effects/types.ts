@@ -1,11 +1,8 @@
 export type EffectType =
-  | 'fireworks'
-  | 'sakura'
   | 'glowParticles'
   | 'floatingDust'
   | 'aurora'
   | 'meteor'
-  | 'waterRipple'
   | 'starfield'
 
 export interface EffectConfig {
@@ -27,7 +24,7 @@ export interface ScreenEffectsSettings {
 }
 
 export interface ScreenEffect {
-  readonly type: EffectType
+  readonly type: string
   update(dt: number, config: EffectConfig, width: number, height: number): void
   render(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement): void
   resize(width: number, height: number): void
@@ -35,24 +32,18 @@ export interface ScreenEffect {
 }
 
 export const EFFECT_LABELS: Record<EffectType, string> = {
-  fireworks: 'Fireworks',
-  sakura: 'Sakura Falling',
   glowParticles: 'Glow Particles',
   floatingDust: 'Floating Dust',
   aurora: 'Aurora Lights',
   meteor: 'Meteor Shower',
-  waterRipple: 'Water Ripple',
   starfield: 'Starfield',
 }
 
 export const EFFECT_DEFAULTS: EffectStateMap = {
-  fireworks: { enabled: false, config: { intensity: 50, count: 50, speed: 50 } },
-  sakura: { enabled: false, config: { intensity: 60, count: 50, speed: 40 } },
   glowParticles: { enabled: false, config: { intensity: 50, count: 40, speed: 30 } },
   floatingDust: { enabled: false, config: { intensity: 40, count: 30, speed: 20 } },
   aurora: { enabled: false, config: { intensity: 50, count: 50, speed: 30 } },
   meteor: { enabled: false, config: { intensity: 50, count: 30, speed: 60 } },
-  waterRipple: { enabled: false, config: { intensity: 50, count: 50, speed: 40 } },
   starfield: { enabled: false, config: { intensity: 50, count: 50, speed: 30 } },
 }
 

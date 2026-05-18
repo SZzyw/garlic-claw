@@ -21,23 +21,26 @@ function readStored(): ScreenEffectsSettings | null {
   }
 }
 
-function mergeDefaults(stored: Partial<Record<EffectType, Partial<EffectStateMap[EffectType]>>>): EffectStateMap {
+function mergeDefaults(stored: Partial<Record<string, Partial<{ enabled: boolean; config: { intensity: number; count: number; speed: number } }>>>): EffectStateMap {
   const result = structuredClone(EFFECT_DEFAULTS)
-  for (const key of Object.keys(stored) as EffectType[]) {
+  for (const key of Object.keys(stored)) {
+    // Skip removed effect types (fireworks, sakura, waterRipple → migrated to ClickFX)
+    if (!(key in result)) continue
     const storedEffect = stored[key]
     if (!storedEffect) continue
+    const effectKey = key as EffectType
     if (typeof storedEffect.enabled === 'boolean') {
-      result[key].enabled = storedEffect.enabled
+      result[effectKey].enabled = storedEffect.enabled
     }
     if (storedEffect.config) {
       if (typeof storedEffect.config.intensity === 'number') {
-        result[key].config.intensity = storedEffect.config.intensity
+        result[effectKey].config.intensity = storedEffect.config.intensity
       }
       if (typeof storedEffect.config.count === 'number') {
-        result[key].config.count = storedEffect.config.count
+        result[effectKey].config.count = storedEffect.config.count
       }
       if (typeof storedEffect.config.speed === 'number') {
-        result[key].config.speed = storedEffect.config.speed
+        result[effectKey].config.speed = storedEffect.config.speed
       }
     }
   }

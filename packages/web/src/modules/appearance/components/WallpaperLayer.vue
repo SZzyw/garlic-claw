@@ -8,6 +8,17 @@
         </filter>
       </defs>
     </svg>
+
+    <!-- ═══ Crossfade layer: previous wallpaper, fading out ═══ -->
+    <div
+      v-if="prevSource"
+      class="wallpaper-crossfade"
+      :class="{ 'wallpaper-crossfade--exit': prevSource }"
+      @transitionend="onCrossfadeEnd"
+    >
+      <div class="wallpaper-crossfade__media" :style="prevMediaStyle" />
+    </div>
+
     <!-- ═══ Layer 1: Media ═══ -->
     <div class="wallpaper-media" :class="modeClass" :style="parallaxStyle">
       <img
@@ -68,10 +79,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useWallpaperStore } from '@/shared/stores/wallpaper'
 
 const store = useWallpaperStore()
+
+// ── Crossfade state ──
+const prevSource = ref<string | null>(null)
+const prevMediaStyle = ref<Record<string, string>>({})
+let crossfadeTimer: ReturnType<typeof setTimeout> | null = null
+
+// Debounce: prevent resample storm when wallpaper changes rapidly
+let sourceDebounce: ReturnType<typeof setTimeout> | null = null
+const DEBOUNCE_MS = 100
 
 // ── Easing helpers ──
 function easeOutCubic(t: number): number {
@@ -139,7 +159,6 @@ const parallaxStyle = computed(() => ({
 // ── Dim: eased brightness→opacity mapping ──
 const dimStyle = computed(() => {
   const b = store.adjustments.brightness / 100 // 0–2
-  // Map brightness to a 0–1 range, then apply easeOutCubic
   const t = Math.max(0, Math.min(1, (1.5 - b) / 1.2))
   const eased = easeOutCubic(t)
   const opacity = 0.12 + eased * 0.35
@@ -151,9 +170,8 @@ const dimStyle = computed(() => {
 
 // ── Glow: asymmetric aura + dynamic blend mode + eased opacity ──
 const glowStyle = computed(() => {
-  const b = store.adjustments.brightness / 100 // 0–2
+  const b = store.adjustments.brightness / 100
 
-  // Blend mode selection
   let blendMode: string
   if (b > 1.3) {
     blendMode = 'multiply'
@@ -167,12 +185,10 @@ const glowStyle = computed(() => {
     blendMode = 'soft-light'
   }
 
-  // Eased glow intensity: strongest in mid-brightness range
   const midDist = 1 - Math.abs(b - 1)
   const easedIntensity = easeInOutSine(midDist)
   const glowOpacity = 0.50 + easedIntensity * 0.45
 
-  // Three asymmetric radial gradients — not centered, creates environmental light feel
   const upperLeft = `radial-gradient(
     ellipse 48% 36% at 28% 22%,
     color-mix(in oklch, var(--gc-accent, oklch(62% 0.14 186)) 26%, transparent) 0%,
@@ -200,6 +216,63 @@ const glowStyle = computed(() => {
     transition: 'opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
   }
 })
+
+// ── Crossfade lifecycle ──
+
+function buildPrevMediaStyle(): Record<string, string> {
+  const url = prevSource.value
+  if (!url) return {}
+  if (url.startsWith('linear-gradient(') || url.startsWith('radial-gradient(')) {
+    return { background: url }
+  }
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase()
+  if (ext === 'mp4' || ext === 'webm' || ext === 'mov') {
+    return {}
+  }
+  return {
+    backgroundImage: `url(${url})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  }
+}
+
+function onCrossfadeEnd(): void {
+  prevSource.value = null
+  prevMediaStyle.value = {}
+}
+
+// Watch for wallpaper source changes with debounce to prevent resample storms
+watch(
+  () => store.sourceUrl,
+  (newUrl, oldUrl) => {
+    if (sourceDebounce) {
+      clearTimeout(sourceDebounce)
+      sourceDebounce = null
+    }
+
+    sourceDebounce = setTimeout(() => {
+      if (oldUrl && oldUrl !== newUrl) {
+        // Capture old media style before switching
+        prevMediaStyle.value = buildPrevMediaStyle()
+        prevSource.value = oldUrl
+      }
+
+      // Clean up crossfade timer
+      if (crossfadeTimer) {
+        clearTimeout(crossfadeTimer)
+        crossfadeTimer = null
+      }
+
+      // Safety: force-remove crossfade layer after max duration (800ms)
+      if (prevSource.value) {
+        crossfadeTimer = setTimeout(() => {
+          prevSource.value = null
+          prevMediaStyle.value = {}
+        }, 800)
+      }
+    }, DEBOUNCE_MS)
+  },
+)
 </script>
 
 <style scoped>
@@ -217,6 +290,26 @@ const glowStyle = computed(() => {
 .wallpaper-root,
 .wallpaper-root * {
   pointer-events: none;
+}
+
+/* ═══ Crossfade: previous wallpaper fading out ═══ */
+.wallpaper-crossfade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wallpaper-crossfade--exit {
+  opacity: 0;
+}
+
+.wallpaper-crossfade__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* ═══ Layer 1: Media ═══ */
@@ -284,7 +377,7 @@ const glowStyle = computed(() => {
 .wallpaper-overlays {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
 }
 
 .overlay {

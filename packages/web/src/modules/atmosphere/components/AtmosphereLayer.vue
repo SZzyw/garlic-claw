@@ -8,6 +8,14 @@
 
     <!-- ═══ Layer 3: Global surface tint wash ═══ -->
     <div class="atmosphere-wash" :style="washStyle" />
+
+    <!-- ═══ Weather overlay: 300ms ease-out opacity transition ═══ -->
+    <div
+      v-if="store.weather !== 'none'"
+      class="atmosphere-weather"
+      :class="`atmosphere-weather--${store.weather}`"
+      :style="weatherOverlayStyle"
+    />
   </div>
 </template>
 
@@ -111,6 +119,26 @@ const washStyle = computed(() => {
     mixBlendMode: 'color' as const,
   }
 })
+
+// ═══════════════════════════════════════════════════════════
+// Weather overlay: subtle atmospheric tint, no blur/filter
+// ═══════════════════════════════════════════════════════════
+const weatherOverlayStyle = computed(() => {
+  const w = store.weather
+  if (w === 'none') return { display: 'none' }
+
+  // Color tints derived from weather presets — kept in sync with weather.ts
+  const tints: Record<string, string> = {
+    rain: 'oklch(50% 0.08 220 / 0.06)',
+    sakura: 'oklch(70% 0.12 340 / 0.05)',
+    dust: 'oklch(60% 0.15 40 / 0.06)',
+    aurora: 'oklch(55% 0.18 170 / 0.07)',
+  }
+
+  return {
+    background: `linear-gradient(180deg, ${tints[w] ?? 'transparent'} 0%, transparent 70%)`,
+  }
+})
 </script>
 
 <style scoped>
@@ -126,7 +154,6 @@ const washStyle = computed(() => {
   height: 100%;
   z-index: 0;
   pointer-events: none;
-  /* Sits between WallpaperLayer (first in DOM) and ScreenEffectsRenderer */
 }
 
 .atmosphere-glow,
@@ -195,12 +222,25 @@ const washStyle = computed(() => {
   }
 }
 
+/* ═══ Weather overlay: opacity-only transition, 300ms ease-out ═══ */
+.atmosphere-weather {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 300ms ease-out;
+  /* No transitions on filter, blur, or backdrop-filter */
+  will-change: opacity;
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .atmosphere-glow,
   .atmosphere-vignette,
-  .atmosphere-wash {
+  .atmosphere-wash,
+  .atmosphere-weather {
     animation: none;
+    transition: none;
   }
 }
 </style>
