@@ -1,6 +1,6 @@
 <template>
   <div class="theme-sliders">
-    <!-- Group 1: Color -->
+    <!-- Color -->
     <div class="slider-section">
       <span class="slider-section__label">颜色</span>
       <div class="slider-group">
@@ -38,11 +38,6 @@
           />
         </div>
       </div>
-    </div>
-
-    <!-- Group 2: Depth -->
-    <div class="slider-section">
-      <span class="slider-section__label">深度</span>
       <div class="slider-group">
         <div class="slider-group__header">
           <label class="slider-group__label" for="appearance-brightness">亮度</label>
@@ -61,65 +56,6 @@
           />
         </div>
       </div>
-      <div class="slider-group">
-        <div class="slider-group__header">
-          <label class="slider-group__label" for="appearance-blur">模糊强度</label>
-          <span class="slider-group__value">{{ blurStrength }}%</span>
-        </div>
-        <div class="slider-group__track">
-          <input
-            id="appearance-blur"
-            type="range"
-            class="slider"
-            min="0"
-            max="100"
-            :value="blurStrength"
-            @input="onBlurInput"
-            :style="blurTrackStyle"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Group 3: Atmosphere -->
-    <div class="slider-section">
-      <span class="slider-section__label">氛围</span>
-      <div class="slider-group">
-        <div class="slider-group__header">
-          <label class="slider-group__label" for="appearance-glow">辉光强度</label>
-          <span class="slider-group__value">{{ glowStrength }}%</span>
-        </div>
-        <div class="slider-group__track">
-          <input
-            id="appearance-glow"
-            type="range"
-            class="slider"
-            min="0"
-            max="100"
-            :value="glowStrength"
-            @input="onGlowInput"
-            :style="glowTrackStyle"
-          />
-        </div>
-      </div>
-      <div class="slider-group">
-        <div class="slider-group__header">
-          <label class="slider-group__label" for="appearance-glass">玻璃质感</label>
-          <span class="slider-group__value">{{ glassOpacity }}%</span>
-        </div>
-        <div class="slider-group__track">
-          <input
-            id="appearance-glass"
-            type="range"
-            class="slider"
-            min="0"
-            max="100"
-            :value="glassOpacity"
-            @input="onGlassInput"
-            :style="glassTrackStyle"
-          />
-        </div>
-      </div>
     </div>
 
     <!-- Reset -->
@@ -128,7 +64,7 @@
         <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
         <path d="M3 3v5h5"/>
       </svg>
-      重置全部
+      重置颜色
     </button>
   </div>
 </template>
@@ -142,11 +78,7 @@ const appearance = useAppearanceStore()
 const hue = computed(() => appearance.effectiveHue)
 const saturation = computed(() => appearance.effectiveSaturation)
 const brightness = computed(() => appearance.effectiveBrightness)
-const glowStrength = computed(() => appearance.effectiveGlowStrength)
-const glassOpacity = computed(() => appearance.effectiveGlassOpacity)
-const blurStrength = computed(() => appearance.effectiveBlurStrength)
 
-// ── Track gradient styles ──
 const saturationTrackStyle = computed(() => ({
   '--slider-track-end': `oklch(58% ${saturation.value / 100 * 0.22} ${hue.value})`,
 }))
@@ -156,19 +88,6 @@ const brightnessTrackStyle = computed(() => ({
   '--slider-track-end': 'oklch(98% 0 0)',
 }))
 
-const glowTrackStyle = computed(() => ({
-  '--slider-track-end': `oklch(58% ${glowStrength.value / 100 * 0.22} ${hue.value} / 0.8)`,
-}))
-
-const blurTrackStyle = computed(() => ({
-  '--slider-track-end': `oklch(58% 0.04 ${hue.value} / 0.6)`,
-}))
-
-const glassTrackStyle = computed(() => ({
-  '--slider-track-end': `oklch(58% 0.04 ${hue.value} / ${glassOpacity.value / 100 * 0.8})`,
-}))
-
-// ── Input handlers ──
 function onHueInput(event: Event): void {
   appearance.setHue(Number((event.target as HTMLInputElement).value))
 }
@@ -178,23 +97,11 @@ function onSaturationInput(event: Event): void {
 function onBrightnessInput(event: Event): void {
   appearance.setBrightness(Number((event.target as HTMLInputElement).value))
 }
-function onGlowInput(event: Event): void {
-  appearance.setGlowStrength(Number((event.target as HTMLInputElement).value))
-}
-function onGlassInput(event: Event): void {
-  appearance.setGlassOpacity(Number((event.target as HTMLInputElement).value))
-}
-function onBlurInput(event: Event): void {
-  appearance.setBlurStrength(Number((event.target as HTMLInputElement).value))
-}
 
 function resetAll(): void {
   appearance.setHue(null)
   appearance.setSaturation(null)
   appearance.setBrightness(null)
-  appearance.setGlowStrength(null)
-  appearance.setGlassOpacity(null)
-  appearance.setBlurStrength(null)
 }
 </script>
 
@@ -205,7 +112,6 @@ function resetAll(): void {
   gap: 16px;
 }
 
-/* ── Section ── */
 .slider-section {
   display: flex;
   flex-direction: column;
@@ -221,7 +127,6 @@ function resetAll(): void {
   opacity: 0.7;
 }
 
-/* ── Slider group ── */
 .slider-group {
   display: flex;
   flex-direction: column;
@@ -256,7 +161,6 @@ function resetAll(): void {
   align-items: center;
 }
 
-/* ── Slider base ── */
 .slider {
   -webkit-appearance: none;
   appearance: none;
@@ -268,7 +172,7 @@ function resetAll(): void {
   cursor: pointer;
 }
 
-/* ── Hue: rainbow track ── */
+/* Hue: rainbow track */
 .slider--hue::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
@@ -299,7 +203,7 @@ function resetAll(): void {
   );
 }
 
-/* ── Generic slider track ── */
+/* Generic slider track */
 .slider::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
@@ -320,7 +224,7 @@ function resetAll(): void {
   );
 }
 
-/* ── Thumb (Webkit) ── */
+/* Thumb (Webkit) */
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -345,7 +249,7 @@ function resetAll(): void {
   transform: scale(0.9);
 }
 
-/* ── Thumb (Firefox) ── */
+/* Thumb (Firefox) */
 .slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
@@ -356,7 +260,7 @@ function resetAll(): void {
   box-shadow: 0 1px 4px var(--gc-shadow-color);
 }
 
-/* ── Reset button ── */
+/* Reset button */
 .slider-reset {
   display: inline-flex;
   align-items: center;

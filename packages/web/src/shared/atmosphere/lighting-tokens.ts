@@ -41,8 +41,8 @@ export function computeAtmosphereLighting(
     ? { hue: sampled.accentHue, saturation: sampled.accentSaturation, lightness: sampled.accentLightness }
     : { hue: 220, saturation: 0.08, lightness: 60 }
 
-  // Apply weather mix if active
-  const weatherColor = weather !== 'none' ? WEATHER_COLORS[weather] : null
+  // Apply weather mix if active (skip 'none' and 'clear')
+  const weatherColor = weather !== 'none' && weather !== 'clear' ? WEATHER_COLORS[weather] : null
   const mixed = weatherColor
     ? mixOklch(base, weatherColor, weatherIntensity)
     : base

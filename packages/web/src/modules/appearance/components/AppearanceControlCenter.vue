@@ -77,24 +77,19 @@
             <WallpaperSettings />
           </div>
 
-          <!-- Effects -->
-          <div v-else-if="activeTab === 'effects'" class="cc-tab-body">
+          <!-- Background Style -->
+          <div v-else-if="activeTab === 'background'" class="cc-tab-body">
             <ScreenEffectsSettings />
           </div>
 
-          <!-- Navbar / Banner / Motion — refined placeholder -->
-          <div v-else class="cc-tab-body cc-placeholder-body">
-            <div class="cc-placeholder">
-              <div class="cc-placeholder-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-                  <circle cx="12" cy="12" r="3" />
-                  <circle cx="12" cy="12" r="8" stroke-dasharray="2 3" />
-                </svg>
-              </div>
-              <span class="cc-placeholder-title">{{ activeTabLabel }}</span>
-              <span class="cc-placeholder-desc">该模块正在精细设计当中，<br />将在后续版本中开放。</span>
-            </div>
+          <!-- Interaction (ClickFX) -->
+          <div v-else-if="activeTab === 'interaction'" class="cc-tab-body">
+            <InteractionSettings />
+          </div>
+
+          <!-- Weather -->
+          <div v-else-if="activeTab === 'weather'" class="cc-tab-body">
+            <WeatherSettings />
           </div>
         </div>
       </aside>
@@ -103,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { useAppearancePanel } from '@/modules/appearance/composables/useAppearancePanel'
 import { useAppearanceStore } from '@/shared/stores/appearance'
 import { useScreenEffectsStore } from '@/modules/screen-effects/store/screen-effects'
@@ -112,6 +107,8 @@ import ThemePresetCard from './ThemePresetCard.vue'
 import ThemeSliders from './ThemeSliders.vue'
 import WallpaperSettings from './WallpaperSettings.vue'
 import ScreenEffectsSettings from './ScreenEffectsSettings.vue'
+import InteractionSettings from './InteractionSettings.vue'
+import WeatherSettings from '@/modules/weather/WeatherSettings.vue'
 
 const { isOpen, close } = useAppearancePanel()
 const appearance = useAppearanceStore()
@@ -140,30 +137,21 @@ const tabs: TabItem[] = [
     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>',
   },
   {
-    id: 'effects',
-    label: '特效',
+    id: 'background',
+    label: '背景样式',
+    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>',
+  },
+  {
+    id: 'interaction',
+    label: '点击特效',
     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>',
   },
   {
-    id: 'navbar',
-    label: '导航栏',
-    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
-  },
-  {
-    id: 'banner',
-    label: '横幅',
-    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 3 8 3 4-1 4-1V3s-1 1-4 1-5-3-8-3-4 1-4 1z"/></svg>',
-  },
-  {
-    id: 'motion',
-    label: '动效',
-    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
+    id: 'weather',
+    label: '天气',
+    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 2.5-8.2 6 6 0 0 0-11.1-2.3A4 4 0 0 0 6.5 17.5"/><path d="M8 19v2M8 13v2M16 19v2M16 13v2M12 21v2M12 15v2"/></svg>',
   },
 ]
-
-const activeTabLabel = computed(() => {
-  return tabs.find((t) => t.id === activeTab.value)?.label ?? ''
-})
 
 function onKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') close()
