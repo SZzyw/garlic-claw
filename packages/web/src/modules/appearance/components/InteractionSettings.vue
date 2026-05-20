@@ -11,9 +11,9 @@
         <button
           type="button"
           class="ix-toggle"
-          :class="{ active: enabled }"
+          :class="{ active: store.enabled }"
           role="switch"
-          :aria-checked="enabled"
+          :aria-checked="store.enabled"
           @click="toggleEnabled"
         >
           <span class="ix-toggle-knob" />
@@ -29,14 +29,26 @@
           v-for="t in types"
           :key="t.id"
           class="ix-type-chip"
-          :class="{ active: currentType === t.id }"
-          :disabled="!enabled"
+          :class="{ active: store.type === t.id }"
+          :disabled="!store.enabled"
           @click="selectType(t.id)"
         >
           {{ t.label }}
         </button>
       </div>
     </section>
+
+    <!-- Test fire -->
+    <button
+      class="ix-test-btn"
+      :disabled="store.type === 'none' || !store.enabled"
+      @click="store.testFire()"
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="5,3 19,12 5,21" />
+      </svg>
+      测试效果
+    </button>
 
     <!-- Sliders -->
     <section class="slider-section">
@@ -45,7 +57,7 @@
         <div class="slider-group">
           <div class="slider-group__header">
             <label class="slider-group__label">强度</label>
-            <span class="slider-group__value">{{ cfg.intensity }}</span>
+            <span class="slider-group__value">{{ store.config.intensity }}</span>
           </div>
           <div class="slider-group__track">
             <input
@@ -53,8 +65,8 @@
               class="slider"
               min="0"
               max="100"
-              :value="cfg.intensity"
-              :disabled="!enabled"
+              :value="store.config.intensity"
+              :disabled="!store.enabled"
               @input="onIntensity"
             />
           </div>
@@ -62,7 +74,7 @@
         <div class="slider-group">
           <div class="slider-group__header">
             <label class="slider-group__label">粒子数</label>
-            <span class="slider-group__value">{{ cfg.particles }}</span>
+            <span class="slider-group__value">{{ store.config.particles }}</span>
           </div>
           <div class="slider-group__track">
             <input
@@ -70,8 +82,8 @@
               class="slider"
               min="0"
               max="100"
-              :value="cfg.particles"
-              :disabled="!enabled"
+              :value="store.config.particles"
+              :disabled="!store.enabled"
               @input="onParticles"
             />
           </div>
@@ -79,7 +91,7 @@
         <div class="slider-group">
           <div class="slider-group__header">
             <label class="slider-group__label">速度</label>
-            <span class="slider-group__value">{{ cfg.speed }}</span>
+            <span class="slider-group__value">{{ store.config.speed }}</span>
           </div>
           <div class="slider-group__track">
             <input
@@ -87,8 +99,8 @@
               class="slider"
               min="0"
               max="100"
-              :value="cfg.speed"
-              :disabled="!enabled"
+              :value="store.config.speed"
+              :disabled="!store.enabled"
               @input="onSpeed"
             />
           </div>
@@ -107,58 +119,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { clickFx } from '@/modules/click-fx/clickFx'
+import { useClickFxStore } from '@/modules/click-fx/store'
 import type { ClickFXType } from '@/modules/click-fx/types'
 
-const enabled = ref(false)
-const currentType = ref<ClickFXType>('none')
-const cfg = reactive({ intensity: 50, particles: 50, speed: 50 })
+const store = useClickFxStore()
 
 const types: { id: ClickFXType; label: string }[] = [
   { id: 'none', label: '无' },
-  { id: 'firework', label: '烟花' },
+  { id: 'aurora-pulse', label: '极光脉冲' },
   { id: 'ripple', label: '涟漪' },
-  { id: 'sakura-burst', label: '樱吹雪' },
+  { id: 'sakura-ripple', label: '樱花涟漪' },
+  { id: 'glass-ripple', label: '玻璃波纹' },
+  { id: 'shockwave', label: '冲击波' },
 ]
 
 function toggleEnabled(): void {
-  enabled.value = !enabled.value
-  clickFx.setEnabled(enabled.value)
+  store.setEnabled(!store.enabled)
 }
 
 function selectType(t: ClickFXType): void {
-  currentType.value = t
-  clickFx.setType(t)
+  store.setType(t)
 }
 
 function onIntensity(event: Event): void {
-  const v = Number((event.target as HTMLInputElement).value)
-  cfg.intensity = v
-  clickFx.setConfig({ intensity: v })
+  store.setConfig({ intensity: Number((event.target as HTMLInputElement).value) })
 }
 
 function onParticles(event: Event): void {
-  const v = Number((event.target as HTMLInputElement).value)
-  cfg.particles = v
-  clickFx.setConfig({ particles: v })
+  store.setConfig({ particles: Number((event.target as HTMLInputElement).value) })
 }
 
 function onSpeed(event: Event): void {
-  const v = Number((event.target as HTMLInputElement).value)
-  cfg.speed = v
-  clickFx.setConfig({ speed: v })
+  store.setConfig({ speed: Number((event.target as HTMLInputElement).value) })
 }
 
 function resetAll(): void {
-  enabled.value = false
-  currentType.value = 'none'
-  cfg.intensity = 50
-  cfg.particles = 50
-  cfg.speed = 50
-  clickFx.setEnabled(false)
-  clickFx.setType('none')
-  clickFx.setConfig({ intensity: 50, particles: 50, speed: 50 })
+  store.resetAll()
 }
 </script>
 
@@ -286,6 +282,40 @@ function resetAll(): void {
 
 .ix-type-chip:disabled {
   opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Test button ── */
+.ix-test-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--gc-accent);
+  background: transparent;
+  color: var(--gc-accent);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background var(--gc-transition-fast),
+    transform var(--gc-transition-fast);
+}
+
+.ix-test-btn:hover:not(:disabled) {
+  background: var(--gc-accent-bg);
+  transform: scale(1.03);
+}
+
+.ix-test-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ix-test-btn:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
