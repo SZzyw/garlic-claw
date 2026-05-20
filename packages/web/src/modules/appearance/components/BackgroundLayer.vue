@@ -20,7 +20,7 @@
     <!-- ═══ Effect renderer ═══ -->
     <EffectRenderer
       :source="store.source"
-      :overlays="store.overlays"
+      :overlay-intensity="store.overlayIntensity"
       :adjustments="store.adjustments"
     />
   </div>

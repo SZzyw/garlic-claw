@@ -79,7 +79,7 @@
 
           <!-- Background Style -->
           <div v-else-if="activeTab === 'backdrop'" class="cc-tab-body">
-            <ScreenEffectsSettings />
+            <BackdropSettings />
           </div>
 
           <!-- Interaction (ClickFX) -->
@@ -101,21 +101,17 @@
 import { ref, watch, onUnmounted } from 'vue'
 import { useAppearancePanel } from '@/modules/appearance/composables/useAppearancePanel'
 import { useAppearanceStore } from '@/shared/stores/appearance'
-import { useScreenEffectsStore } from '@/modules/screen-effects/store/screen-effects'
 import { themePresets } from '@/shared/theme/constants'
 import ThemePresetCard from './ThemePresetCard.vue'
 import ThemeSliders from './ThemeSliders.vue'
 import BackgroundSettings from './BackgroundSettings.vue'
-import ScreenEffectsSettings from './ScreenEffectsSettings.vue'
+import BackdropSettings from './BackdropSettings.vue'
 import InteractionSettings from './InteractionSettings.vue'
 import WeatherSettings from '@/modules/weather/WeatherSettings.vue'
 
 const { isOpen, close } = useAppearancePanel()
 const appearance = useAppearanceStore()
 const presets = themePresets
-
-// Initialize screen effects store
-useScreenEffectsStore().init()
 
 const activeTab = ref('theme')
 

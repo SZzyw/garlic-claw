@@ -36,25 +36,16 @@ export const OBJECT_FIT_MAP: Record<DisplayMode, string> = {
   stretch: 'fill',
 }
 
-// ── Overlays & adjustments (kept from old system, consumed by EffectRenderer) ──
-export interface BackgroundOverlays {
-  blur: boolean
-  dim: boolean
-  glow: boolean
-}
+// ── Overlay intensity: single 0–1 knob that drives blur/dim/glow proportionally ──
+export const DEFAULT_OVERLAY_INTENSITY = 0
 
+// ── Adjustments (consumed by SourceRenderer CSS filter + partially by EffectRenderer) ──
 export interface BackgroundAdjustments {
   blur: number       // 0–100 px
   opacity: number    // 0–1
   saturation: number // 0–200 (100 = normal)
   brightness: number // 0–200 (100 = normal)
   contrast: number   // 0–200 (100 = normal)
-}
-
-export const DEFAULT_OVERLAYS: BackgroundOverlays = {
-  blur: false,
-  dim: false,
-  glow: false,
 }
 
 export const DEFAULT_ADJUSTMENTS: BackgroundAdjustments = {
@@ -69,14 +60,14 @@ export const DEFAULT_ADJUSTMENTS: BackgroundAdjustments = {
 export interface BackgroundConfig {
   source: PersistedBackgroundSource
   displayMode: DisplayMode
-  overlays: BackgroundOverlays
+  overlayIntensity: number
   adjustments: BackgroundAdjustments
 }
 
 export const DEFAULT_CONFIG: BackgroundConfig = {
   source: { kind: 'none' },
   displayMode: 'fill',
-  overlays: { ...DEFAULT_OVERLAYS },
+  overlayIntensity: DEFAULT_OVERLAY_INTENSITY,
   adjustments: { ...DEFAULT_ADJUSTMENTS },
 }
 

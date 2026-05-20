@@ -2,7 +2,7 @@
   <div class="effect-renderer">
     <!-- Blur: duplicated static media + gradient depth mask -->
     <div
-      v-if="overlays.blur && source.kind !== 'none' && source.kind !== 'video'"
+      v-if="overlayIntensity > 0.15 && source.kind !== 'none' && source.kind !== 'video'"
       class="overlay overlay--blur"
     >
       <img
@@ -27,21 +27,21 @@
     <div class="overlay overlay--vignette" />
 
     <!-- Dim: dynamic rgba mask -->
-    <div v-if="overlays.dim" class="overlay overlay--dim" :style="dimStyle" />
+    <div v-if="overlayIntensity > 0" class="overlay overlay--dim" :style="dimStyle" />
 
     <!-- Glow: asymmetric aura + drift animation -->
-    <div v-if="overlays.glow" class="overlay overlay--glow" :style="glowStyle" />
+    <div v-if="overlayIntensity > 0.2" class="overlay overlay--glow" :style="glowStyle" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { BackgroundSource, BackgroundOverlays, BackgroundAdjustments } from '@/shared/background/types'
+import type { BackgroundSource, BackgroundAdjustments } from '@/shared/background/types'
 import { getGradientCSS } from '@/shared/background/presets'
 
 const props = defineProps<{
   source: BackgroundSource
-  overlays: BackgroundOverlays
+  overlayIntensity: number
   adjustments: BackgroundAdjustments
 }>()
 
@@ -50,40 +50,22 @@ const gradientCSS = computed(() => {
   return ''
 })
 
-// ── Easing helpers ──
-function easeOutCubic(t: number): number {
-  return 1 - (1 - t) ** 3
-}
-function easeInOutSine(t: number): number {
-  return -(Math.cos(Math.PI * t) - 1) / 2
-}
-
-// ── Dim: eased brightness→opacity mapping ──
+// ── Dim: intensity-driven opacity ──
 const dimStyle = computed(() => {
-  const b = props.adjustments.brightness / 100
-  const t = Math.max(0, Math.min(1, (1.5 - b) / 1.2))
-  const eased = easeOutCubic(t)
-  const opacity = 0.12 + eased * 0.35
+  const t = props.overlayIntensity
+  if (t <= 0) return { display: 'none' }
+  const opacity = t * 0.42
   return {
     background: `rgba(0, 0, 0, ${opacity.toFixed(3)})`,
     transition: 'background 1s cubic-bezier(0.4, 0, 0.2, 1)',
   }
 })
 
-// ── Glow: asymmetric aura + dynamic blend mode ──
+// ── Glow: asymmetric aura, opacity driven by intensity ──
 const glowStyle = computed(() => {
-  const b = props.adjustments.brightness / 100
-
-  let blendMode: string
-  if (b > 1.3) blendMode = 'multiply'
-  else if (b > 1.05) blendMode = 'overlay'
-  else if (b < 0.7) blendMode = 'screen'
-  else if (b < 0.9) blendMode = 'lighten'
-  else blendMode = 'soft-light'
-
-  const midDist = 1 - Math.abs(b - 1)
-  const easedIntensity = easeInOutSine(midDist)
-  const glowOpacity = 0.50 + easedIntensity * 0.45
+  const t = props.overlayIntensity
+  if (t <= 0.2) return { display: 'none' }
+  const glowOpacity = (t - 0.2) * 0.78
 
   const upperLeft = `radial-gradient(
     ellipse 48% 36% at 28% 22%,
@@ -105,7 +87,7 @@ const glowStyle = computed(() => {
 
   return {
     background: `${upperLeft}, ${lowerRight}, ${bottomAmbient}`,
-    mixBlendMode: blendMode as 'multiply' | 'overlay' | 'screen' | 'lighten' | 'soft-light',
+    mixBlendMode: 'soft-light' as const,
     opacity: glowOpacity,
     transition: 'opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
   }

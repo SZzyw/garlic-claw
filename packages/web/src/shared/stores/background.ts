@@ -4,12 +4,11 @@ import {
   type BackgroundSource,
   type PersistedBackgroundSource,
   type DisplayMode,
-  type BackgroundOverlays,
   type BackgroundAdjustments,
   type BackgroundConfig,
   type BackgroundPreset,
   DEFAULT_CONFIG,
-  DEFAULT_OVERLAYS,
+  DEFAULT_OVERLAY_INTENSITY,
   DEFAULT_ADJUSTMENTS,
 } from '@/shared/background/types'
 import { backgroundPresets, getGradientCSS } from '@/shared/background/presets'
@@ -24,7 +23,7 @@ function readPersisted(): BackgroundConfig {
     return {
       source: parsed.source ?? DEFAULT_CONFIG.source,
       displayMode: parsed.displayMode ?? DEFAULT_CONFIG.displayMode,
-      overlays: { ...DEFAULT_OVERLAYS, ...parsed.overlays },
+      overlayIntensity: parsed.overlayIntensity ?? DEFAULT_OVERLAY_INTENSITY,
       adjustments: { ...DEFAULT_ADJUSTMENTS, ...parsed.adjustments },
     }
   } catch {
@@ -53,7 +52,7 @@ export const useBackgroundStore = defineStore('background', () => {
 
   const source = ref<BackgroundSource>(persistedToRuntime(persisted.source))
   const displayMode = ref<DisplayMode>(persisted.displayMode)
-  const overlays = ref<BackgroundOverlays>({ ...persisted.overlays })
+  const overlayIntensity = ref<number>(persisted.overlayIntensity)
   const adjustments = ref<BackgroundAdjustments>({ ...persisted.adjustments })
 
   // ── Derived ──
@@ -97,8 +96,8 @@ export const useBackgroundStore = defineStore('background', () => {
     persist()
   }
 
-  function setOverlay(key: keyof BackgroundOverlays, value: boolean): void {
-    overlays.value = { ...overlays.value, [key]: value }
+  function setOverlayIntensity(value: number): void {
+    overlayIntensity.value = Math.max(0, Math.min(1, value))
     persist()
   }
 
@@ -110,19 +109,18 @@ export const useBackgroundStore = defineStore('background', () => {
   function resetAll(): void {
     source.value = { kind: 'none' }
     displayMode.value = DEFAULT_CONFIG.displayMode
-    overlays.value = { ...DEFAULT_OVERLAYS }
+    overlayIntensity.value = DEFAULT_OVERLAY_INTENSITY
     adjustments.value = { ...DEFAULT_ADJUSTMENTS }
     persist()
   }
 
-  // ── Batch API (for future Background Style tab) ──
   function setConfig(partial: {
     displayMode?: DisplayMode
-    overlays?: Partial<BackgroundOverlays>
+    overlayIntensity?: number
     adjustments?: Partial<BackgroundAdjustments>
   }): void {
     if (partial.displayMode !== undefined) displayMode.value = partial.displayMode
-    if (partial.overlays) overlays.value = { ...overlays.value, ...partial.overlays }
+    if (partial.overlayIntensity !== undefined) overlayIntensity.value = partial.overlayIntensity
     if (partial.adjustments) adjustments.value = { ...adjustments.value, ...partial.adjustments }
     persist()
   }
@@ -131,7 +129,7 @@ export const useBackgroundStore = defineStore('background', () => {
     const config: BackgroundConfig = {
       source: runtimeToPersisted(source.value),
       displayMode: displayMode.value,
-      overlays: { ...overlays.value },
+      overlayIntensity: overlayIntensity.value,
       adjustments: { ...adjustments.value },
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
@@ -140,7 +138,7 @@ export const useBackgroundStore = defineStore('background', () => {
   return {
     source,
     displayMode,
-    overlays,
+    overlayIntensity,
     adjustments,
     isActive,
     activePreset,
@@ -150,7 +148,7 @@ export const useBackgroundStore = defineStore('background', () => {
     setSolidColor,
     setDisplayMode,
     clear,
-    setOverlay,
+    setOverlayIntensity,
     setAdjustment,
     setConfig,
     resetAll,
