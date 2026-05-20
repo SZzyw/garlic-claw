@@ -1,4 +1,4 @@
-export type ClickFXType = 'none' | 'firework' | 'ripple' | 'sakura-burst'
+export type ClickFXType = 'none' | 'aurora-pulse' | 'ripple' | 'sakura-ripple' | 'glass-ripple' | 'shockwave'
 
 export interface ClickFXConfig {
   intensity: number // 0-100
@@ -6,34 +6,8 @@ export interface ClickFXConfig {
   speed: number // 0-100
 }
 
-export interface ClickEvent {
-  type: ClickFXType
-  x: number
-  y: number
-  config?: Partial<ClickFXConfig>
-}
-
-export interface Particle {
-  x: number
-  y: number
-  vx: number
-  vy: number
-  life: number // 0-1, 1 = born, 0 = dead
-  maxLife: number // ms
-  born: number // timestamp
-  hue: number
-  saturation: number
-  lightness: number
-  size: number
-}
-
-export interface Burst {
-  type: ClickFXType
-  particles: Particle[]
-  born: number
-  x: number
-  y: number
-  update(now: number): void
-  render(ctx: CanvasRenderingContext2D): void
-  isAlive(now: number): boolean
+export const DEFAULT_CONFIG: ClickFXConfig = {
+  intensity: 50,
+  particles: 50,
+  speed: 50,
 }
