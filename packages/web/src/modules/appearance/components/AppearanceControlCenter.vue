@@ -73,12 +73,12 @@
           </div>
 
           <!-- Wallpaper -->
-          <div v-else-if="activeTab === 'wallpaper'" class="cc-tab-body">
-            <WallpaperSettings />
+          <div v-else-if="activeTab === 'background'" class="cc-tab-body">
+            <BackgroundSettings />
           </div>
 
           <!-- Background Style -->
-          <div v-else-if="activeTab === 'background'" class="cc-tab-body">
+          <div v-else-if="activeTab === 'backdrop'" class="cc-tab-body">
             <ScreenEffectsSettings />
           </div>
 
@@ -105,7 +105,7 @@ import { useScreenEffectsStore } from '@/modules/screen-effects/store/screen-eff
 import { themePresets } from '@/shared/theme/constants'
 import ThemePresetCard from './ThemePresetCard.vue'
 import ThemeSliders from './ThemeSliders.vue'
-import WallpaperSettings from './WallpaperSettings.vue'
+import BackgroundSettings from './BackgroundSettings.vue'
 import ScreenEffectsSettings from './ScreenEffectsSettings.vue'
 import InteractionSettings from './InteractionSettings.vue'
 import WeatherSettings from '@/modules/weather/WeatherSettings.vue'
@@ -132,12 +132,12 @@ const tabs: TabItem[] = [
     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/></svg>',
   },
   {
-    id: 'wallpaper',
+    id: 'background',
     label: '壁纸',
     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>',
   },
   {
-    id: 'background',
+    id: 'backdrop',
     label: '背景样式',
     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>',
   },
