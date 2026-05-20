@@ -1,7 +1,7 @@
 <template>
   <ThemeProvider>
     <Teleport to="body">
-      <WallpaperLayer />
+      <BackgroundLayer />
       <AtmosphereLayer />
       <GlassNoiseDef />
     </Teleport>
@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import ThemeProvider from '@/shared/providers/ThemeProvider.vue'
-import WallpaperLayer from '@/modules/appearance/components/WallpaperLayer.vue'
+import BackgroundLayer from '@/modules/appearance/components/BackgroundLayer.vue'
 import AtmosphereLayer from '@/modules/atmosphere/components/AtmosphereLayer.vue'
 import GlassNoiseDef from '@/shared/components/GlassNoiseDef.vue'
 import ScreenEffectsRenderer from '@/modules/screen-effects/components/ScreenEffectsRenderer.vue'

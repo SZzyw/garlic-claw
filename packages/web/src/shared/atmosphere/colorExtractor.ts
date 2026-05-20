@@ -10,13 +10,7 @@ import type { SampledColors, ExtractionResult } from './types'
  */
 export async function extractColors(
   sourceUrl: string,
-  sourceKind: 'image' | 'video' | 'gradient' | 'preset',
 ): Promise<ExtractionResult> {
-  // Only image sources can be sampled
-  if (sourceKind !== 'image' && sourceKind !== 'preset') {
-    return { samples: null, error: `Cannot sample source kind: ${sourceKind}` }
-  }
-
   if (!sourceUrl) {
     return { samples: null, error: 'No source URL' }
   }

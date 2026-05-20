@@ -7,7 +7,7 @@ import { setAtmosphereSamples } from '@/shared/atmosphere/samples'
 import { setAtmosphereLightingTokens } from '@/shared/atmosphere/lighting-bridge'
 import { computeAtmosphereLighting } from '@/shared/atmosphere/lighting-tokens'
 import { type WeatherType } from '@/shared/atmosphere/weather'
-import { useWallpaperStore } from './wallpaper'
+import { useBackgroundStore } from './background'
 
 const STORAGE_KEY = 'garlic-claw:atmosphere'
 
@@ -53,22 +53,22 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
   })
 
   // ── Actions ──
-  async function sampleWallpaper(): Promise<void> {
-    const wallpaper = useWallpaperStore()
-    if (!wallpaper.isActive || !wallpaper.sourceUrl) {
+  async function sampleBackground(): Promise<void> {
+    const bg = useBackgroundStore()
+    const src = bg.source
+
+    if (src.kind === 'none' || src.kind === 'color' || src.kind === 'gradient') {
       clearSamples()
       return
     }
 
-    // Skip sampling for gradients — can't extract from CSS gradients
-    if (wallpaper.sourceKind === 'gradient') {
-      // For gradients, we could parse the gradient string, but for now skip
+    if (src.kind === 'video') {
       clearSamples()
       return
     }
 
-    if (wallpaper.sourceKind === 'video') {
-      // Video sampling not yet supported — skip
+    // src.kind === 'image'
+    if (!src.url) {
       clearSamples()
       return
     }
@@ -77,7 +77,7 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
     lastError.value = null
 
     try {
-      const result = await extractColors(wallpaper.sourceUrl, wallpaper.sourceKind)
+      const result = await extractColors(src.url)
       if (result.samples) {
         samples.value = result.samples
         setAtmosphereSamples(result.samples)
@@ -119,16 +119,20 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
       setAtmosphereLightingTokens(tokens)
     }, { immediate: true })
 
-    // Sample immediately if wallpaper is active
-    sampleWallpaper()
+    // Sample immediately if background is active
+    sampleBackground()
 
-    // Watch for wallpaper changes
-    const wallpaper = useWallpaperStore()
+    // Watch for background source changes
+    const bg = useBackgroundStore()
     watch(
-      () => [wallpaper.sourceUrl, wallpaper.sourceKind] as const,
+      () => {
+        const s = bg.source
+        if (s.kind === 'image') return s.url
+        return s.kind
+      },
       () => {
         if (enabled.value) {
-          sampleWallpaper()
+          sampleBackground()
         }
       },
     )
@@ -145,7 +149,7 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
     dominantColor,
     accentColor,
     lightingTokens,
-    sampleWallpaper,
+    sampleBackground,
     clearSamples,
     setWeather,
     setConfig,
