@@ -5,6 +5,7 @@
       <AtmosphereLayer />
       <GlassNoiseDef />
     </Teleport>
+    <ClickFxListener />
     <div class="app-content">
       <router-view />
     </div>
@@ -16,6 +17,7 @@ import ThemeProvider from '@/shared/providers/ThemeProvider.vue'
 import BackgroundLayer from '@/modules/appearance/components/BackgroundLayer.vue'
 import AtmosphereLayer from '@/modules/atmosphere/components/AtmosphereLayer.vue'
 import GlassNoiseDef from '@/shared/components/GlassNoiseDef.vue'
+import ClickFxListener from '@/modules/click-fx/ClickFxListener.vue'
 </script>
 
 <style>
