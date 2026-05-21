@@ -39,51 +39,40 @@ useAppearanceStore()
 
 <style scoped>
 .appearance-button {
-  --btn-glow: var(--gc-glow);
-  --btn-shadow: var(--gc-shadow-color);
-  --btn-accent: var(--gc-primary);
-  --btn-border: var(--gc-glass-border);
-  --btn-bg: var(--gc-glass-bg);
-
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 7px;
   height: 36px;
   padding: 0 12px 0 6px;
-  border-radius: 12px;
-  border: 1px solid var(--btn-border);
-  background: var(--btn-bg);
-  backdrop-filter: blur(var(--gc-blur-standard));
-  -webkit-backdrop-filter: blur(var(--gc-blur-standard));
+  border-radius: var(--gc-radius-sm);
+  border: 1px solid var(--gc-border);
+  background: transparent;
   cursor: pointer;
-  color: var(--gc-foreground);
-  font-size: 13px;
+  color: var(--gc-text-muted);
+  font-size: 14px;
   font-family: inherit;
   user-select: none;
   transition:
-    transform var(--gc-transition-slow),
-    box-shadow var(--gc-transition-slow),
-    border-color var(--gc-transition-slow),
-    background var(--gc-transition-slow);
-  box-shadow: var(--gc-shadow-xs);
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .appearance-button:hover {
-  transform: translateY(var(--gc-hover-lift-strong));
-  box-shadow: var(--gc-shadow-md);
-  border-color: var(--btn-accent);
+  border-color: var(--gc-border-strong);
+  background-color: var(--gc-surface-elevated);
+  color: var(--gc-text);
 }
 
 .appearance-button:active {
-  transform: translateY(0);
-  box-shadow: var(--gc-shadow-xs);
+  background-color: var(--gc-surface-elevated);
 }
 
 .appearance-button.is-active {
-  border-color: var(--btn-accent);
-  box-shadow: var(--gc-shadow-sm);
-  background: var(--gc-muted);
+  border-color: var(--gc-border-strong);
+  background-color: var(--gc-surface-elevated);
+  color: var(--gc-text);
 }
 
 /* ── Accent preview ring ── */
