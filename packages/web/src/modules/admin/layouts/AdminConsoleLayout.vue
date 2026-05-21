@@ -23,9 +23,7 @@ import type { IconifyIcon } from '@iconify/types'
 import { Icon } from '@iconify/vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import WeatherOverlay from '@/modules/weather/WeatherOverlay.vue'
-import { weatherRuntime } from '@/modules/weather/weatherRuntime'
-import { weatherParticles } from '@/modules/weather/WeatherParticles'
+
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -457,7 +455,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.body.style.overflow = ''
   clearTopbarPullTimer()
-  weatherParticles.dispose()
   window.removeEventListener('resize', updateViewportWidth)
   window.removeEventListener('mousemove', onResizeMove)
   window.removeEventListener('mousemove', onHandleMove)
@@ -471,25 +468,6 @@ watch(viewportWidth, applyAutoCollapse, { immediate: true })
 watch(preferredExpandedSiderWidth, (width) => {
   saveExpandedSiderWidth(width)
 })
-
-// ── Weather particles lifecycle ──
-watch(
-  [() => weatherRuntime.current, () => weatherRuntime.config.particleCount, () => weatherRuntime.quality],
-  ([type]) => {
-    if (type === 'clear' || !weatherRuntime.hasParticles) {
-      weatherParticles.stop()
-    } else {
-      weatherParticles.start(type, weatherRuntime.intensity)
-    }
-  },
-)
-
-watch(
-  () => weatherRuntime.config.intensity,
-  (v) => {
-    weatherParticles.updateIntensity(v / 100)
-  },
-)
 </script>
 
 <template>
@@ -621,7 +599,6 @@ watch(
   </div>
 
   <AppearanceControlCenter />
-  <WeatherOverlay />
 </template>
 
 <style scoped>
