@@ -87,10 +87,6 @@
             <InteractionSettings />
           </div>
 
-          <!-- Weather -->
-          <div v-else-if="activeTab === 'weather'" class="cc-tab-body">
-            <WeatherSettings />
-          </div>
         </div>
       </aside>
     </div>
@@ -107,7 +103,6 @@ import ThemeSliders from './ThemeSliders.vue'
 import BackgroundSettings from './BackgroundSettings.vue'
 import BackdropSettings from './BackdropSettings.vue'
 import InteractionSettings from './InteractionSettings.vue'
-import WeatherSettings from '@/modules/weather/WeatherSettings.vue'
 
 const { isOpen, close } = useAppearancePanel()
 const appearance = useAppearanceStore()
@@ -141,11 +136,6 @@ const tabs: TabItem[] = [
     id: 'interaction',
     label: '点击特效',
     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>',
-  },
-  {
-    id: 'weather',
-    label: '天气',
-    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 2.5-8.2 6 6 0 0 0-11.1-2.3A4 4 0 0 0 6.5 17.5"/><path d="M8 19v2M8 13v2M16 19v2M16 13v2M12 21v2M12 15v2"/></svg>',
   },
 ]
 
