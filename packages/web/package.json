@@ -21,6 +21,7 @@
     "@iconify/types": "^2.0.0",
     "@iconify/vue": "^5.0.0",
     "@tanstack/vue-virtual": "^3.13.23",
+    "animejs": "^4.4.1",
     "dompurify": "^3.4.2",
     "element-plus": "^2.13.7",
     "highlight.js": "^11.11.1",
