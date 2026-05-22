@@ -129,8 +129,8 @@ const types: { id: ClickFXType; label: string }[] = [
   { id: 'aurora-pulse', label: '极光脉冲' },
   { id: 'ripple', label: '涟漪' },
   { id: 'sakura-ripple', label: '樱花涟漪' },
-  { id: 'glass-ripple', label: '玻璃波纹' },
-  { id: 'shockwave', label: '冲击波' },
+  { id: 'glass-ripple', label: '等离子爆裂' },
+  { id: 'shockwave', label: '全息扫描' },
 ]
 
 function toggleEnabled(): void {

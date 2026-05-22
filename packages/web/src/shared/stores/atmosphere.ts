@@ -64,6 +64,12 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
       return
     }
 
+    // Slideshow: rotating images, skip atmosphere sampling
+    if (src.kind === 'slideshow') {
+      clearSamples()
+      return
+    }
+
     // src.kind === 'image'
     if (!src.url) {
       clearSamples()
@@ -121,6 +127,7 @@ export const useAtmosphereStore = defineStore('atmosphere', () => {
       () => {
         const s = bg.source
         if (s.kind === 'image') return s.url
+        if (s.kind === 'slideshow') return 'slideshow'
         return s.kind
       },
       () => {

@@ -1,12 +1,14 @@
 import { computed } from 'vue'
 import { useBackgroundStore } from '@/shared/stores/background'
-import type { DisplayMode, BackgroundSource } from '@/shared/background/types'
+import type { DisplayMode, BackgroundSource, Slide } from '@/shared/background/types'
+import { DEFAULT_INTERVAL_SEC } from '@/shared/background/types'
 import { getGradientCSS, backgroundPresets } from '@/shared/background/presets'
 
 export function useBackgroundSource() {
   const store = useBackgroundStore()
 
   const source = computed(() => store.source)
+  const activeResolvedSource = computed(() => store.activeResolvedSource)
   const displayMode = computed(() => store.displayMode)
   const currentSourceKind = computed(() => store.source.kind)
   const presets = backgroundPresets
@@ -35,6 +37,10 @@ export function useBackgroundSource() {
     store.setSource(src)
   }
 
+  function setSlideshow(photos: Slide[], intervalSec: number = DEFAULT_INTERVAL_SEC): void {
+    store.setSource({ kind: 'slideshow', photos, intervalSec })
+  }
+
   function setSolidColor(color: string): void {
     store.setSolidColor(color)
   }
@@ -47,12 +53,25 @@ export function useBackgroundSource() {
     store.clear()
   }
 
+  function addSlideshowPhotos(photos: Slide[]): boolean {
+    return store.addSlideshowPhotos(photos)
+  }
+
+  function removeSlideshowPhoto(index: number): void {
+    store.removeSlideshowPhoto(index)
+  }
+
+  function setSlideshowInterval(sec: number): void {
+    store.setSlideshowInterval(sec)
+  }
+
   function getPresetGradientCSS(presetId: string): string {
     return getGradientCSS(presetId)
   }
 
   return {
     source,
+    activeResolvedSource,
     displayMode,
     currentSourceKind,
     presets,
@@ -60,9 +79,13 @@ export function useBackgroundSource() {
     currentColor,
     selectPreset,
     setUploadedImage,
+    setSlideshow,
     setSolidColor,
     setDisplayMode,
     clear,
+    addSlideshowPhotos,
+    removeSlideshowPhoto,
+    setSlideshowInterval,
     getPresetGradientCSS,
   }
 }

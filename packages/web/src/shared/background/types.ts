@@ -5,14 +5,25 @@ export type BackgroundSource =
   | { kind: 'gradient'; presetId: string }
   | { kind: 'image';  url: string; meta?: ImageMeta }
   | { kind: 'video';  url: string }
+  | { kind: 'slideshow'; photos: Slide[]; intervalSec: number }
 
-// ── Persisted source: image kind has no blob URL ──
+// ── Persisted source: image/slideshow kind has no blob URL ──
 export type PersistedBackgroundSource =
   | { kind: 'none' }
   | { kind: 'color';  color: string }
   | { kind: 'gradient'; presetId: string }
   | { kind: 'image';  meta?: ImageMeta }
   | { kind: 'video';  url: string }
+  | { kind: 'slideshow'; photos: { id: string }[]; intervalSec: number }
+
+export interface Slide {
+  id: string
+  url: string
+}
+
+export const MAX_SLIDESHOW_PHOTOS = 5
+export const DEFAULT_INTERVAL_SEC = 10
+export const INTERVAL_SEC_OPTIONS = [5, 10, 15, 30, 60]
 
 export interface ImageMeta {
   name: string

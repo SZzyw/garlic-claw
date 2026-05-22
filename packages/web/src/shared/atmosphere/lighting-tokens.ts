@@ -21,7 +21,7 @@ function oklchString(c: OklchColor, alpha?: number): string {
 
 export function computeAtmosphereLighting(
   sampled: SampledColors | null,
-  intensity: number,
+  weatherIntensity: number,
   config: AtmosphereConfig,
 ): TokenRecord {
   if (!sampled) return {}
@@ -32,7 +32,7 @@ export function computeAtmosphereLighting(
     lightness: sampled.accentLightness,
   }
 
-  const i = Math.max(0, Math.min(1, config.intensity))
+  const i = Math.max(0, Math.min(1, weatherIntensity))
   const glowScale = Math.max(0.5, Math.min(2, config.glowScale))
   const atmoSat = Math.min(base.saturation, 0.40)
   const atmoHue = base.hue

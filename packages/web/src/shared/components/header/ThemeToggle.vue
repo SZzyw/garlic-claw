@@ -11,6 +11,7 @@ const theme = useThemeStore()
 
 const wrapperRef = ref<HTMLElement>()
 const triggerRef = ref<typeof ElButton>()
+const panelRef = ref<HTMLElement>()
 const panelOpen = ref(false)
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -49,7 +50,8 @@ function cancelClose() {
 }
 
 function handleClickOutside(e: MouseEvent) {
-  if (wrapperRef.value && !wrapperRef.value.contains(e.target as Node)) {
+  const target = e.target as Node
+  if (wrapperRef.value && !wrapperRef.value.contains(target) && panelRef.value && !panelRef.value.contains(target)) {
     closePanel()
   }
 }
@@ -88,6 +90,7 @@ const panelStyle = computed(() => {
     <Teleport to="body">
       <Transition name="theme-dropdown">
         <div
+          ref="panelRef"
           v-if="panelOpen"
           class="theme-panel"
           :style="panelStyle"
