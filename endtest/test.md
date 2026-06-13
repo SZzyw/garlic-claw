@@ -249,3 +249,133 @@ expect(validateSync(plainToInstance(McpServerDto, {
 - **零运行时失败**，所有断言与实际代码行为一致。
 - 交互状态键的 `ALIAS_TO_PRIMITIVE` 映射缺失属于代码库已有问题，不影响运行时行为（由 `DEPTH` 系统绕过）。
 - 测试可在 `~2.6s` 内完成，适合集成到 CI 流程。
+
+---
+
+# @garlic-claw/shared 测试报告
+
+> 测试时间: 2026-06-13  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: jsdom 环境, `@garlic-claw/shared` 别名指向 `packages/shared/src/index.ts`  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 4 |
+| 测试套件总数 | 34 |
+| 通过套件 | 34 |
+| 失败套件 | 0 |
+| 测试用例总数 | 108 |
+| 通过用例 | 108 |
+| 失败用例 | 0 |
+| 运行耗时 | ~1.9 s |
+
+---
+
+## 模块说明
+
+`@garlic-claw/shared` 为**纯类型定义包**（无运行时逻辑），由以下子模块组成：
+
+| 模块 | 文件 | 说明 |
+|------|------|------|
+| JSON 类型 | `types/json.ts` | `JsonValue` / `JsonObject` 递归类型 |
+| 角色 | `types/roles.ts` | `Role` 字符串联合 |
+| API 契约 | `types/api.ts` | `ApiResponse<T>`、`PaginatedResponse<T>`、认证/API 密钥 DTO |
+| AI 配置 | `types/ai.ts` | 模型/提供商/路由/重试/视觉回退配置 |
+| 自动化 | `types/automation.ts` | 触发器、动作、自动化信息、事件分派 |
+| 对话/消息 | `types/chat.ts` | 消息零件、状态/角色枚举、14 种 SSE 事件变体、消息/会话结构 |
+| 权限 | `types/runtime-permission.ts` | 运行时操作能力、决策、请求/响应类型 |
+| 插件核心 | `types/plugin-core.ts` | 插件运行时描述、权限/钩子名、配置模式、调用上下文 |
+| 插件清单 | `types/plugin-manifest.ts` | 清单、注册/执行/钩子负载、治理、命令目录 |
+| 插件 AI | `types/plugin-ai.ts` | LLM 生成、子代理派生/等待、5 类钩子负载与结果联合 |
+| 插件生命周期 | `types/plugin-lifecycle.ts` | 加载/卸载/错误事件钩子 |
+| 插件 Host | `types/plugin-host.ts` | 54 种 Host 方法、调用/结果负载 |
+| 插件 Cron | `types/plugin-cron.ts` | Cron 描述符/任务摘要/嘀嗒负载 |
+| 插件路由 | `types/plugin-route.ts` | HTTP 路由描述符、请求/响应、调用/结果负载 |
+| 插件记录 | `types/plugin-records.ts` | 健康/事件日志/存储/自身信息/人设/知识库类型 |
+| 插件子代理 | `types/plugin-subagent.ts` | 子代理摘要/详情/概览 |
+| 插件工具输出 | `types/plugin-tool-output.ts` | 文本/JSON 输出判别联合 |
+| 插件运行时工具 | `types/plugin-runtime-tools.ts` | 命令执行/读取/glob/grep/写入/编辑结果类型 |
+| 工具 | `types/tool.ts` | 工具源/信息/MCP 服务器配置、删除结果 |
+| Skill | `types/skill.ts` | Skill 治理/资产/摘要/详情/加载结果 |
+| 钩子契约 | `plugin-runtime-contract.ts` | 钩子系列定义（入站/消息/操作/广播/生命周期/子代理） |
+
+---
+
+## 测试覆盖
+
+### 1. shared-core.spec.ts — 39 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| JSON types | 3 | `JsonValue` 原始值/对象/嵌套数组 |
+| Role | 1 | 全部 5 种角色字符串 |
+| API types | 7 | `ApiResponse<T>`、`PaginatedResponse<T>`、AuthTokens、Login/Register、UserInfo、ApiKeyScope、ApiKeySummary、CreateApiKeyResponse |
+| AI types | 10 | Provider 驱动枚举、`AiModelCapabilities`、`AiModelConfig`、`AiModelUsage` 源区分、`AiProviderCatalogItem`、`VisionFallbackConfig` 可选字段、`AiUtilityModelRole` 联合、`AiHostModelRoutingConfig`、`DEFAULT_AI_CHAT_AUTO_RETRY_CONFIG` 运行时值验证 |
+| Automation types | 2 | `TriggerConfig` 类型判别、`AutomationInfo` 全字段 |
+| Chat types | 11 | `ChatMessagePart` 判别、状态/角色枚举、`ChatMessageCustomBlock` 种类判别、`ChatMessageAnnotation`、14→13 种 SSEEvent 变体（修正为 13 种实际变体）、`Conversation` 可选子代理、`ConversationSubagentState`、`ConversationDetail` 扩展、`ConversationContextWindowPreview` 策略联合 |
+| Runtime Permission | 4 | 策略动作/决策枚举、请求/回复结构 |
+
+### 2. shared-plugin.spec.ts — 43 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| Plugin core types | 11 | 运行时种类、权限列表、调用上下文 7 种来源、参数模式 5 种类型、钩子过滤器、配置模式 5 种变体、`PluginConfigSchema`、`WsMessage` 泛型、`PluginManifest`、`PluginCapability`、`PluginBuiltinRole`、`PluginInfo` |
+| Plugin lifecycle | 2 | 加载/卸载/错误钩子负载，含远程描述符 |
+| Plugin host | 2 | Host 方法联合、调用负载 |
+| Plugin cron | 2 | 描述符/任务摘要 |
+| Plugin route | 2 | 路由描述符/响应 |
+| Plugin records | 6 | 健康状态 5 种/快照/事件日志/自身信息/人设摘要与详情 |
+| Plugin subagent | 2 | 摘要与详情 |
+| Plugin tool output | 1 | 文本/JSON 种类判别 |
+| Plugin runtime tools | 5 | 命令参数/结果/读取结果/写入状态判别/编辑策略 |
+| Tool types | 4 | 工具源种类、`ToolSourceInfo`、MCP 环境值源 3 种、`McpServerConfig` 结构化环境 |
+| Skill types | 4 | 来源种类、加载策略、治理信息、详情扩展 |
+
+### 3. shared-contract.spec.ts — 13 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| Hook payload input | 1 | `HookPayloadInput` 包裹上下文与负载 |
+| HookSpec | 1 | 元组 `[payload, result]` 结构 |
+| InboundHookFamily | 1 | 入站钩子 2 种命名空间 |
+| MessageHookFamily | 1 | 生命周期钩子结果类型=负载类型 |
+| OperationHookFamily | 1 | 操作钩子负载/结果类型 |
+| BroadcastHookFamily | 1 | 广播钩子返回 `void` |
+| LifecycleBroadcastHookFamily | 1 | 插件生命周期钩子返回 `void` |
+| AllBroadcastHookFamily | 1 | 广播+生命周期交集 |
+| SubagentHookFamily | 2 | before-run 联合结果（continue/short-circuit）、after-run 传递 |
+| HookFamilyInput | 1 | 从家族派生的泛型输入 |
+| HookChainInput | 1 | 记录/上下文/负载/调用者结构 |
+| HookChainRunnerMap | 1 | 钩子名到运行函数映射 |
+
+### 4. shared-integration.spec.ts — 13 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| ChatBeforeModel flow | 2 | 负载在 `HookPayloadInput` 中流通、`ChatBeforeModelHookResult` 三重联合 |
+| MessageReceived flow | 2 | mutate/short-circuit 结果分支 |
+| After model to response | 1 | `ChatAfterModelHookResult` pass/mutate |
+| Subagent lifecycle | 1 | 子代理 before-run 使用 `PluginCallContext` 和 `PluginSubagentRequest` |
+| Response pipeline | 1 | `ResponseBeforeSend` 和 `ResponseAfterSend` 共享负载形状 |
+| Automation flow | 1 | 自动化 before-run 使用 `ActionConfig[]` |
+| Generic type binding | 1 | `ApiResponse<T>` / `PaginatedResponse<T>` 泛型参数绑定 |
+| ConversationSubagentState | 1 | 运行时子代理状态含可选 provider/model 标识 |
+| PluginRuntimeReadResult | 1 | 目录/文件/资产三重判别 |
+| PluginToolOutput | 1 | 文本/JSON 输出在自动化结果中自洽 |
+| Export accessibility | 1 | 所有模块可通过 `@garlic-claw/shared` 索引访问 |
+
+---
+
+## 结论
+
+- **108/108 测试用例全部通过**，覆盖 `@garlic-claw/shared` 包的 21 个 TypeScript 源文件。
+- 纯类型包的测试策略：结构验证（构建符合接口的对象）+ 联合判别验证（SSE/钩子结果/MCP 配置）+ 跨模块集成验证（`HookPayloadInput`→`ChatBeforeModelHookPayload` 流通）。
+- 测试在 `~1.9s` 内完成，零运行时依赖，适合集成到 CI 流程。
+- 测试过程中发现并修正了 2 个问题：
+  1. `import type` 无法导入运行时常量 `DEFAULT_AI_CHAT_AUTO_RETRY_CONFIG` — 拆分为独立运行时导入。
+  2. SSEEvent 变体实际为 13 种（非 14 种），`message-start` 的 `userMessage` 字段可选。
