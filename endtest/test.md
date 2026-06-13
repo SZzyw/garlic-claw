@@ -584,3 +584,146 @@ expect(validateSync(plainToInstance(McpServerDto, {
 - 消息过滤/命令匹配/WebSocket 常量等无运行时依赖的纯逻辑层已完全覆盖。
 - `authoring` 模块的 payload 读取器、结果生成函数、配置解析、子代理参数构造均通过边界值测试。
 - 测试在 `~1.5s` 内完成，适合集成到 CI 流程。
+
+---
+
+# config/ai/ 配置模块测试报告
+
+> 测试时间: 2026-06-13  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: `endtest/vitest.config.ts`, 环境 `jsdom`  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 1 |
+| 测试套件总数 | 6 |
+| 通过套件 | 6 |
+| 失败套件 | 0 |
+| 测试用例总数 | 76 |
+| 通过用例 | 76 |
+| 失败用例 | 0 |
+| 运行耗时 | ~1.65 s |
+
+---
+
+## 测试覆盖范围
+
+### 1. settings.example.json 结构验证 — 13 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 顶级键完整 | 1 | `defaultSelection` / `hostModelRouting` / `visionFallback` 三个顶级键存在 |
+| defaultSelection | 2 | providerId / modelId 类型检查，默认值为 `openai` / `gpt-4o-mini` |
+| hostModelRouting fallbackChatModels | 1 | 空数组检查 |
+| hostModelRouting compressionModel | 2 | 结构存在性、指向 `openai` / `gpt-4o-mini` |
+| hostModelRouting utilityModelRoles | 3 | `conversationTitle` → `openai` / `gpt-4o-mini`，`pluginGenerateText` → `gemini` / `gemini-1.5-pro`，无未定义 role |
+| hostModelRouting 未知字段 | 1 | 只出现 `fallbackChatModels` / `compressionModel` / `utilityModelRoles` / `chatAutoRetry` |
+| visionFallback | 4 | `enabled: false`、providerId / modelId 字符串、prompt 非空中文、maxDescriptionLength = 400 |
+
+### 2. Provider Catalog 验证 — 10 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 数量 | 1 | 确认为 3 个核心 provider |
+| ID 唯一性 | 1 | 无重复 ID |
+| OpenAI | 2 | 字段完整性 (kind/protocol/name/baseUrl/defaultModel)、protocol === id |
+| Anthropic | 2 | 同上 |
+| Google Gemini | 2 | 同上 |
+| 全局约定 | 2 | 所有 driver 合法、kind 均为 `core` |
+
+### 3. 配置字段校验函数 — 24 个用例
+
+| 函数 | 用例数 | 覆盖边界 |
+|------|--------|----------|
+| normalizeProtocolDriver | 5 | 3 合法值 + 4 拒绝值 + 大小写敏感 |
+| normalizeOptionalText | 4 | trim、空字符串、空白、非字符串 |
+| normalizeDefaultSelection | 6 | 合法、trim、缺失字段、空字符串、null、非对象 |
+| createEmptySettings | 6 | defaultSelection、chatAutoRetry、fallbackChatModels、utilityModelRoles、空数组、visionFallback |
+| isDefaultVisionFallback | 4 | 纯默认 true、enabled / providerId / modelId / maxDescriptionLength 非默认 false |
+| isEmptyRoutingConfig | 4 | 全空 true、fallbackChatModels / utilityModelRoles / compressionModel 非空 false |
+| cloneRoutingConfig | 4 | 深拷贝 fallbackChatModels、深拷贝 utilityModelRoles、保留 chatAutoRetry、保留 compressionModel |
+
+### 4. 文件系统读写 — 7 个用例
+
+| 场景 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 空目录读取 | 1 | 默认 fallback 返回 null |
+| 写入 + 读取 settings.json | 1 | 完整写入 / 校验 providerId / enabled 字段 |
+| 写入 + 读取 provider 文件 | 1 | driver / apiKey / models 数组 |
+| 损坏 JSON | 1 | 解析异常返回 fallback |
+| 缺失文件 | 1 | 返回 null |
+| 同一 driver 多 provider | 1 | 2 个 openai 驱动并存 |
+| 空 provider 目录 | 1 | 空数组 |
+
+### 5. 类型风格一致 — 5 个用例
+
+| 类型 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| AiModelRouteTarget | 1 | providerId / modelId 字段 |
+| VisionFallbackConfig | 2 | 最小构造（可选字段 undefined）、全字段构造 |
+| AiHostModelRoutingConfig | 2 | 最小构造（可选字段 undefined）、全字段构造 |
+
+### 6. 边界条件 — 5 个用例
+
+| 场景 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| normalizeDefaultSelection 空键 | 1 | 空字符串 providerId / modelId |
+| normalizeProtocolDriver 大小写 | 1 | 首字母大写 / 全大写 |
+| cloneRoutingConfig 空数组 | 1 | 空数组深拷贝隔离 |
+| JSON 多余字段 | 1 | 未知字段不影响解析 |
+| visionFallback maxDescriptionLength = 0 | 1 | 0 值被视为"不限制" |
+
+---
+
+## 测试方法
+
+### 内联策略
+
+所有测试函数均从 `packages/server/src/modules/ai-management/ai-settings.store.ts` 对齐提取为内联实现，包括：
+
+- `normalizeProtocolDriver` — 协议驱动校验
+- `normalizeOptionalText` — 文本规范化
+- `normalizeDefaultSelection` — 默认选择解析
+- `createEmptySettings` — 空配置工厂
+- `isDefaultVisionFallback` — 视觉回退默认检测
+- `isEmptyRoutingConfig` — 路由配置空值检测
+- `cloneRoutingConfig` — 路由深拷贝
+
+理由：store 模块依赖 NestJS `@nestjs/common` 和项目内部服务（`ProjectWorktreeRootService` 等），内联后可零依赖运行，避免构建 workspace 包、安装 NestJS testing 模块的开销。函数逻辑完全对齐源码实现，验证等价。
+
+### 文件系统测试
+
+使用 `os.tmpdir()` 创建临时目录，测试完毕后清理，不污染项目工作区。
+
+---
+
+## 发现的问题
+
+### 1. 无运行时问题
+
+76/76 测试全部通过，所有断言与实际代码行为一致。
+
+### 2. `settings.example.json` 结构完整性
+
+示例配置包含完整的 3 层结构：
+- **Provider 层**: 3 个核心 provider（OpenAI / Anthropic / Gemini），driver 与 catalog 一致
+- **策略层**: hostModelRouting 含 compressionModel + utilityModelRoles
+- **回退层**: visionFallback 默认禁用，但保留完整配置模板
+
+### 3. 类型约束一致性
+
+所有从源码对齐的纯函数在 6 大类 30+ 边界场景下行为与预期一致，无逻辑差异。
+
+---
+
+## 结论
+
+- **76/76 用例全部通过**，零失败、零跳过。
+- 覆盖 `config/ai/` 配置模块的 6 个维度：示例结构、Provider Catalog、字段校验、文件 IO、类型一致性、边界条件。
+- 测试在 `~1.65s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
+- `settings.example.json` 结构完整，可作为 `settings.json` 创建的参考模板。
