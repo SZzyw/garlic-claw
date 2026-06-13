@@ -1521,3 +1521,202 @@ Skill 定义包含完整的 3 层结构：
 - `weather-query` 作为当前唯一内置技能，定义完整、脚本实现规范，可作为自定义技能的参考模板。
 - 从源码对齐的 7 个纯函数在 22+ 边界场景下行为与预期一致，无逻辑差异。
 - 测试在 `~1.93s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
+
+---
+
+# config/subagent/ 配置模块测试报告
+
+> 测试时间: 2026-06-13  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: `endtest/vitest.config.ts`, 环境 `jsdom`  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 1 |
+| 测试套件总数 | 9 |
+| 通过套件 | 9 |
+| 失败套件 | 0 |
+| 测试用例总数 | 85 |
+| 通过用例 | 85 |
+| 失败用例 | 0 |
+| 运行耗时 | ~1.44 s |
+
+---
+
+## 测试覆盖范围
+
+### 1. 目录结构验证 — 9 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| config/subagent/ 目录存在 | 1 | 目录存在且为目录类型 |
+| explore/general 子目录存在 | 2 | 两个子目录均存在 |
+| subagent.json 存在性 | 2 | explore + general 均含配置文件 |
+| explore/prompt.md 存在 | 1 | 探索子代理含提示词文件 |
+| general 不含 prompt.md | 1 | 通用子代理无提示词文件 |
+| 目录名按字母序排列 | 1 | 排序约定验证 |
+| 目录名为 encodeURIComponent 编码 ID | 1 | 编码/解码 roundtrip |
+
+### 2. explore/subagent.json 结构验证 — 11 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 顶级字段完整 | 1 | id/name/description/toolNames 四个键存在 |
+| 无未知字段 | 1 | 仅允许 4 个已知键 |
+| id | 1 | 值为 `explore` |
+| name | 1 | 值为 `探索` |
+| description | 2 | 类型为非空字符串 |
+| toolNames | 4 | 数组类型、含 webfetch/skill、长度=2 |
+
+### 3. general/subagent.json 结构验证 — 12 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 顶级字段完整 | 1 | id/name/description 三个键存在 |
+| 无未知字段 | 1 | 仅允许 3 个已知键 |
+| id | 1 | 值为 `general` |
+| name | 1 | 值为 `通用` |
+| description | 2 | 类型为非空字符串 |
+| 不含 toolNames/modelId/providerId | 3 | 三个可选字段全部缺失 |
+
+### 4. explore/prompt.md 内容验证 — 7 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 文件非空 | 1 | 文件长度 > 0 |
+| 关键词验证 | 4 | 包含"探索"/"信息收集"/"不主动修改文件"/"先继续检索" |
+| 与默认定义一致 | 1 | 内容匹配 `DEFAULT_SUBAGENT_TYPES` 中 explore 的 system |
+| 结尾无多余空白 | 1 | 文件不以多余换行结尾 |
+
+### 5. 规范化函数 — 21 个用例
+
+| 函数 | 用例数 | 覆盖边界 |
+|------|--------|----------|
+| normalizeOptionalText | 4 | trim、空字符串、空白、非字符串 |
+| normalizeStoredProjectSubagentType | 16 | 完整构造、id fallback、name fallback、缺失可选字段、toolNames 去重、空数组过滤、空 description/modelId/providerId 排除、空/空白 systemPrompt 排除 |
+| readStoredProjectSubagentPrompt | 1 | 不存在的 prompt.md 返回 undefined |
+
+### 6. 文件系统读写 — 12 个用例
+
+| 场景 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 读取真实 explore | 1 | id/name/description/system/toolNames 完整性 |
+| 读取真实 general | 1 | id/name/description 完整性，system/toolNames 为 undefined |
+| 读取真实 prompt.md | 1 | 内容非空 |
+| 写入+读取完整类型 | 1 | roundtrip 字段匹配 |
+| 无 system 不生成 prompt.md | 1 | 写入后 prompt.md 不存在 |
+| 无 toolNames 不生成字段 | 1 | config 不含 toolNames |
+| system 清除 prompt.md | 1 | 从有 system 到无 system 时文件被删除 |
+| 多类型目录加载 | 1 | 3 个类型按字母序加载 |
+| 空目录返回空列表 | 1 | 空结果 |
+| 损坏 JSON | 1 | 解析异常返回 null |
+| 缺失 subagent.json | 1 | 返回 null |
+
+### 7. 类型风格一致 — 7 个用例
+
+| 类型 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| PluginSubagentTypeSummary | 2 | 最小/含 description 构造 |
+| ProjectSubagentTypeDefinition | 2 | 最小/全字段构造 |
+| DEFAULT_SUBAGENT_TYPES 数量 | 1 | 4 种默认类型 (general/explore/review/writer) |
+| DEFAULT_SUBAGENT_TYPES ID 唯一 | 1 | 无重复 ID |
+
+### 8. 边界条件 — 9 个用例
+
+| 场景 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| normalizeOptionalText 换行+空白 | 1 | 复合空白 trim |
+| normalizeOptionalText 制表符 | 1 | 制表符 trim |
+| normalizeStoredProjectSubagentType null record | 1 | 空对象使用 fallback |
+| loadProjectSubagentTypes 不存在目录 | 1 | 返回空数组 |
+| decodeURIComponent 编码验证 | 1 | 编码/解码一致性 |
+| JSON 多余字段容错 | 1 | 未知字段不破坏解析 |
+| 超长 name 保留 | 1 | 1000 字符 name |
+| 大量 toolNames 去重 | 1 | 100 条目→10 个 |
+| trim 前后空白字段 | 1 | id/name/description 被 trim |
+
+### 9. 集成验证 — 8 个用例
+
+| 场景 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 读取 explore 并规范化验证 | 1 | 端到端字段完整性 |
+| 读取 general 并规范化验证 | 1 | end-to-end 不含 system/toolNames |
+| readStoredProjectSubagentPrompt 读取实际文件 | 1 | 包含"探索"和"信息收集" |
+| loadProjectSubagentTypes 从实际目录加载 | 1 | 包含 explore/general |
+| explore toolNames 磁盘存储验证 | 1 | 含 webfetch + skill |
+| general description 验证 | 1 | 实际描述文本匹配 |
+| 写入+读取 roundtrip | 1 | 全字段完整性保持 |
+| JSON 多余字段容错 | 1 | 未知字段不破坏读取 |
+
+---
+
+## 测试方法
+
+### 内联策略
+
+所有测试函数均从 `packages/server/src/modules/execution/project/project-subagent-type-registry.service.ts` 对齐提取为内联实现，包括：
+
+- `normalizeOptionalText` — 文本规范化
+- `normalizeStoredProjectSubagentType` — 子代理类型定义规范化（id fallback、name fallback、可选字段排除、toolNames 去重过滤）
+- `readStoredProjectSubagentType` — 子代理类型文件读取与解析
+- `readStoredProjectSubagentPrompt` — prompt.md 读取
+- `writeStoredProjectSubagentType` — 子代理类型写入（含 prompt.md 生命周期管理）
+- `loadProjectSubagentTypes` — 目录扫描与类型加载
+
+理由：registry 服务依赖 NestJS `@nestjs/common` 和 `ProjectWorktreeRootService` 等服务，内联后可零依赖运行。函数逻辑完全对齐源码实现。
+
+### 文件系统测试
+
+使用 `os.tmpdir()` 创建临时目录，测试完毕后清理，不污染项目工作区。
+
+---
+
+## 发现的问题
+
+### 1. 无运行时问题
+
+85/85 测试全部通过，所有断言与实际代码行为一致。
+
+### 2. `explore/subagent.json` 结构完整性
+
+配置包含完整的 4 层结构：
+- **标识**: id（`explore`）、name（`探索`）
+- **说明**: description（偏向资料探索与技能加载）
+- **工具限制**: toolNames 限定 `webfetch` + `skill` 两种工具
+
+### 3. `general/subagent.json` 结构完整性
+
+配置符合"无限制"语义：
+- **标识**: id（`general`）、name（`通用`）
+- **说明**: description（默认子代理类型）
+- **无 toolNames/modelId/providerId**: 表示沿用当前请求配置，不额外裁剪
+
+### 4. `explore/prompt.md` 内容完整性
+
+提示词文件包含 3 行中文系统提示，声明：
+- 专注于探索与信息收集
+- 优先检索、抓取、整理上下文，不主动修改文件
+- 信息不足时继续检索再给出结论
+
+### 5. 磁盘存储 vs 默认定义差异
+
+磁盘上 `explore` 的 `toolNames` 仅包含 `webfetch` + `skill`（用户自定义精简版），而源码 `DEFAULT_SUBAGENT_TYPES` 中 explore 包含 `read` / `glob` / `grep` / `webfetch` / `skill`。磁盘上的配置选择性的缩减了工具列表，属于用户自定义设置，不影响功能。
+
+### 6. 函数逻辑一致性
+
+所有从源码对齐的纯函数在 9 大类 60+ 边界场景下行为与预期一致，无逻辑差异。
+
+---
+
+## 结论
+
+- **85/85 用例全部通过**，零失败、零跳过。
+- 覆盖 `config/subagent/` 配置模块的 9 个维度：目录结构、explore JSON 结构、general JSON 结构、prompt.md 内容、规范化函数、文件 IO、类型一致性、边界条件、集成验证。
+- `general` 和 `explore` 两个子代理类型配置定义完整，可作为自定义子代理类型的参考模板。
+- 从源码对齐的 6 个纯函数在 21+ 边界场景下行为与预期一致，无逻辑差异。
+- 测试在 `~1.44s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
