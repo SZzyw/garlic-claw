@@ -22,6 +22,14 @@ export default defineConfig({
         find: /^@garlic-claw\/shared\/(.*)$/,
         replacement: fileURLToPath(new URL('../packages/shared/src/$1', import.meta.url)),
       },
+      {
+        find: /^@garlic-claw\/plugin-sdk$/,
+        replacement: fileURLToPath(new URL('../packages/plugin-sdk/src/index.ts', import.meta.url)),
+      },
+      {
+        find: /^@garlic-claw\/plugin-sdk\/(.*)$/,
+        replacement: fileURLToPath(new URL('../packages/plugin-sdk/src/$1', import.meta.url)),
+      },
     ],
   },
 })

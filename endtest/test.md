@@ -378,4 +378,209 @@ expect(validateSync(plainToInstance(McpServerDto, {
 - 测试在 `~1.9s` 内完成，零运行时依赖，适合集成到 CI 流程。
 - 测试过程中发现并修正了 2 个问题：
   1. `import type` 无法导入运行时常量 `DEFAULT_AI_CHAT_AUTO_RETRY_CONFIG` — 拆分为独立运行时导入。
-  2. SSEEvent 变体实际为 13 种（非 14 种），`message-start` 的 `userMessage` 字段可选。
+   2. SSEEvent 变体实际为 13 种（非 14 种），`message-start` 的 `userMessage` 字段可选。
+
+---
+
+# @garlic-claw/plugin-sdk 测试报告
+
+> 测试时间: 2026-06-13  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: jsdom 环境, 别名指向 `packages/plugin-sdk/src`  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 5 |
+| 测试套件总数 | 90 |
+| 通过套件 | 90 |
+| 失败套件 | 0 |
+| 测试用例总数 | 277 |
+| 通过用例 | 277 |
+| 失败用例 | 0 |
+| 运行耗时 | ~1.5 s |
+
+---
+
+## 测试覆盖范围
+
+### 1. utils (plugin-sdk-utils.spec.ts) — 15 个套件, 62 个用例
+
+| 模块 | 套件 | 用例数 | 覆盖范围 |
+|------|------|--------|----------|
+| json-value | cloneJsonValue | 2 | 原始值、深拷贝嵌套对象 |
+| json-value | isOneOf | 3 | 命中/未命中/非字符串 |
+| json-value | isJsonValue | 5 | 基本类型/数组/对象/函数/嵌套函数 |
+| json-value | isJsonObjectValue | 3 | 纯对象/数组/null |
+| json-value | isStringRecord | 2 | 字符串记录/非字符串值 |
+| json-value | isJsonEqual | 2 | JSON 序列化比较/不等检测 |
+| json-value | dedupeStrings | 2 | 去重/空数组 |
+| message-filter | normalizePriority | 3 | undefined/浮点截断/整数 |
+| message-filter | computeFilterSpecificity | 4 | 无 filter/命令字数/regex/messageKinds |
+| message-filter | isEmptyMessageFilter | 2 | 空 filter/有命令 |
+| message-filter | hasOnlyMessageFilterKey | 2 | 单一 key/多 key |
+| message-filter | mergeExclusiveMessageFilters | 6 | 空/含空/commands/regex/messageKinds/混合 |
+| message-filter | getMessageReceivedText | 2 | string content/parts 拼接 |
+| message-filter | detectMessageKind | 3 | text/image/mixed |
+| message-filter | matchesMessageCommand | 4 | 精确/带参/前缀/空字符串 |
+| message-filter | matchesMessageFilter | 4 | 无 filter/命令匹配/regex 匹配 |
+| command-match | normalizeCommandSegment | 3 | 去除斜杠/空字符串/空白字符 |
+| command-match | normalizeCommandAliases | 2 | undefined/归一化 |
+| command-match | buildCanonicalCommandPath | 1 | 规范路径构建 |
+| command-match | buildCommandVariants | 1 | 多段别名组合 |
+| command-match | renderCommandGroupHelp | 2 | 含命令/空组描述 |
+| route | normalizeRoutePath | 2 | 前后斜杠清理 |
+| route | normalizeRouteResponse | 2 | 默认 200/保留状态码 |
+
+### 2. host (plugin-sdk-host.spec.ts) — 10 个套件, 31 个用例
+
+| 模块 | 套件 | 用例数 | 覆盖范围 |
+|------|------|--------|----------|
+| host-json-value.codec | toHostJsonValue | 6 | 基本类型/数组(Date)/对象(Date)/嵌套/非纯对象回退 |
+| facade-payload.helpers | buildPluginMessageSendParams | 2 | 最小/含可选 |
+| facade-payload.helpers | buildPluginConversationSessionStartParams | 2 | 必需/含可选 |
+| facade-payload.helpers | buildPluginConversationSessionKeepParams | 2 | 必需/含 resetTimeout |
+| facade-payload.helpers | buildPluginRegisterCronParams | 2 | 最小/含可选 |
+| facade-payload.helpers | buildPluginCreateAutomationParams | 1 | 自动创建参数 |
+| facade-payload.helpers | buildPluginGenerateParams | 1 | 生成参数 |
+| facade-payload.helpers | buildPluginSubagentSpawnParams | 1 | 派生参数 |
+| facade-payload.helpers | buildPluginSubagentWaitParams | 2 | 必需/含 timeout |
+| facade-payload.helpers | buildPluginSubagentInterruptParams | 1 | 中断参数 |
+| facade-payload.helpers | buildPluginSubagentCloseParams | 1 | 关闭参数 |
+| facade-payload.helpers | buildPluginGenerateTextParams | 1 | 文本生成参数 |
+| facade-payload.helpers | buildPluginConversationHistoryPreviewParams | 2 | 空/含可选 |
+| facade-payload.helpers | buildPluginConversationHistoryReplaceParams | 1 | 替换参数 |
+| facade-payload.helpers | toScopedStateParams | 2 | 无 scope/有 scope |
+| facade | createPluginHostFacade | 4 | 完整方法清单/无参转发/键参转发/会话委托 |
+
+### 3. client (plugin-sdk-client.spec.ts) — 9 个套件, 49 个用例
+
+| 模块 | 套件 | 用例数 | 覆盖范围 |
+|------|------|--------|----------|
+| plugin-client.constants | CHAT_MESSAGE_STATUS_VALUES | 2 | 5 种状态/数量 |
+| plugin-client.constants | REMOTE_ENVIRONMENT | 1 | API/IOT |
+| plugin-client.constants | PLUGIN_HOOK_NAME_VALUES | 4 | message:received/生命周期/cron/数量 |
+| plugin-client.constants | PLUGIN_INVOCATION_SOURCE_VALUES | 2 | 7 种来源/数量 |
+| plugin-client.constants | PLUGIN_ROUTE_METHOD_VALUES | 2 | 5 种 HTTP 方法/数量 |
+| plugin-client.constants | WS_TYPE | 1 | 5 种 WS 类型 |
+| plugin-client.constants | WS_ACTION | 8 | 认证/注册/执行/hook/route/host/心跳分组验证 |
+| plugin-client-payload.helpers | cloneJsonValue | 1 | 深拷贝 |
+| plugin-client-payload.helpers | isChatMessagePartArray | 4 | text/image/非数组/未知类型 |
+| plugin-client-payload.helpers | isPluginLlmMessageArray | 2 | 有效/无效角色 |
+| plugin-client-payload.helpers | readHookInvokePayload | 3 | 有效/无效 hookName/非对象 |
+| plugin-client-payload.helpers | readExecutePayload | 2 | toolName/capability 回退 |
+| plugin-client-payload.helpers | readHostResultPayload | 1 | 解析结果 |
+| plugin-client-payload.helpers | readRouteInvokePayload | 1 | 路由调用 |
+| plugin-client-payload.helpers | readMessageReceivedHookPayload | 2 | 基础/含 session |
+| plugin-client-message.helpers | normalizeMessageListenerResult | 5 | string/{content}/标准结果/无效/null |
+| plugin-client-message.helpers | normalizeRawMessageHookResult | 2 | null→pass/透传 |
+| plugin-client-message.helpers | applyMessageReceivedMutation | 5 | providerId/modelId/content/parts/modelMessages |
+| plugin-client-message.helpers | buildMessageReceivedMutationResult | 2 | 无变化→pass/变化→mutation |
+
+### 4. authoring (plugin-sdk-authoring.spec.ts) — 51 个套件, 127 个用例
+
+| 模块 | 套件 | 用例数 | 覆盖范围 |
+|------|------|--------|----------|
+| common-helpers | sanitizeOptionalText | 3 | trim/undefined/null |
+| common-helpers | readJsonObjectValue | 3 | 对象/数组/原始值 |
+| common-helpers | readRequiredStringParam | 4 | 有效/缺失/空/非字符串 |
+| common-helpers | readOptionalStringParam | 4 | undefined/null/有效/非字符串 |
+| common-helpers | readOptionalObjectParam | 3 | 缺失/有效/非对象 |
+| common-helpers | readRequiredTextValue | 3 | 有效/空/非字符串 |
+| common-helpers | readBooleanFlag | 2 | 布尔值/回退 |
+| common-helpers | pickOptionalStringFields | 2 | 筛选字符串/空对象 |
+| common-helpers | pickOptionalNumberFields | 1 | 筛选数字 |
+| common-helpers | textIncludesKeyword | 4 | 匹配/空/undefined/不匹配 |
+| builtin-results | readMemorySearchResults | 2 | 数组/非数组 |
+| builtin-results | readMemorySaveResultId | 2 | 对象/非对象 |
+| builtin-results | readPluginCreateAutomationParams | 3 | manual/cron/无效 triggerType |
+| builtin-results | createAutomationCreatedResult | 1 | 创建结果 |
+| builtin-results | createAutomationListResult | 1 | 列表映射 |
+| builtin-results | createMemorySaveToolResult | 1 | 保存结果 |
+| builtin-results | createMemoryRecallToolResult | 1 | 格式化回忆 |
+| builtin-results | createCurrentTimeToolResult | 1 | 时间结果 |
+| builtin-results | createSystemInfoToolResult | 1 | 系统信息 |
+| builtin-results | createCalculateSuccessResult | 1 | 计算 |
+| builtin-results | createRouteInspectorContextResponse | 1 | 上下文响应 |
+| conversation-helpers | readConversationSummary | 1 | 提取 id/title |
+| conversation-helpers | readConversationMessages | 2 | 数组/非数组 |
+| conversation-helpers | readConversationTitleConfig | 1 | 读取配置 |
+| conversation-helpers | resolveConversationTitleRuntimeConfig | 1 | 默认值填充 |
+| conversation-helpers | readTextGenerationResult | 2 | 提取/缺失 |
+| conversation-helpers | shouldGenerateConversationTitle | 3 | 匹配/不同/undefined |
+| conversation-helpers | buildConversationTitlePrompt | 2 | 构建/无内容 |
+| conversation-helpers | sanitizeConversationTitle | 2 | 清理/无效 |
+| conversation-helpers | normalizePositiveInteger | 3 | 有效/0/undefined |
+| context-compaction | readContextCompactionConfig | 2 | 有效策略/无效策略 |
+| context-compaction | resolveContextCompactionRuntimeConfig | 2 | 默认值/范围钳制 |
+| observation-summaries | (10 个独立函数) | 10 | 各概要函数输出结构验证 |
+| observation-summaries | describeJsonValueKind | 3 | array/null/string |
+| observation-summaries | buildToolAuditStorageKey | 1 | 存储键构建 |
+| prompt-helpers | 默认值 | 2 | KB_CONTEXT_DEFAULT_LIMIT/PROMPT_PREFIX |
+| prompt-helpers | createChatBeforeModelLineBlockResult | 2 | 空行/null/非空行 |
+| prompt-helpers | filterAllowedToolNames | 3 | undefined/空数组/过滤 |
+| prompt-helpers | sameToolNames | 3 | 相同/不同长度/不同顺序 |
+| router-helpers | readProviderRouterConfig | 1 | 路由配置读取 |
+| router-helpers | readCurrentProviderInfo | 1 | Provider 信息 |
+| router-helpers | readPersonaRouterConfig | 1 | Persona 路由配置 |
+| router-helpers | readCurrentPersonaInfo | 1 | Persona 信息 |
+| router-helpers | readPersonaSummaryInfo | 1 | Persona 摘要 |
+| subagent | readSubagentConfig | 1 | 子代理配置 |
+| subagent | buildSubagentSpawnParams | 1 | 派生参数 |
+| subagent | buildSubagentWaitParams | 1 | 等待参数 |
+| subagent | buildSubagentSendInputParams | 3 | 基础/配置回退/显式优先 |
+| subagent | buildSubagentInterruptParams | 1 | 中断参数 |
+| subagent | buildSubagentCloseParams | 1 | 关闭参数 |
+| subagent | createSubagentSummaryResult | 1 | 结果转换 |
+| subagent | buildSubagentToolDefinitions | 2 | 5 个工具/类型指南 |
+| transport | createPluginAuthorTransportExecutor | 10 | 工具执行/未知工具/hook/未注册 hook/路由/未知路由/governance 4 种 |
+| transport | createChatBeforeModelHookResult | 2 | 追加/合并 |
+| transport | createPassHookResult | 1 | pass 动作 |
+| transport | createSystemPromptMutateResult | 1 | mutate systemPrompt |
+| transport | createProviderRouterShortCircuitResult | 1 | 短路结果 |
+| transport | createProviderRouterMutateResult | 2 | 有路由/无路由 |
+| transport | payload readers | 4 | 4 种 payload 读取器 |
+
+### 5. integration (plugin-sdk-integration.spec.ts) — 4 个套件, 8 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| host facade + authoring transport | 3 | executor→facade 调用链、hook→facade 传递、路由归一化 |
+| message filter + command matching + pipeline | 2 | 命令别名组合、路由路径归一化一致性 |
+| toHostJsonValue + facade payload helpers | 2 | 类型参数→JSON、Date 嵌套 |
+| chat:before-model flow | 1 | createChatBeforeModelHookResult 与 executor 兼容 |
+
+---
+
+## 配置变更
+
+测试新增以下 vitest 别名以支持 `@garlic-claw/plugin-sdk` 子路径导入：
+
+```typescript
+// endtest/vitest.config.ts
+{
+  find: /^@garlic-claw\/plugin-sdk$/,
+  replacement: '../packages/plugin-sdk/src/index.ts',
+},
+{
+  find: /^@garlic-claw\/plugin-sdk\/(.*)$/,
+  replacement: '../packages/plugin-sdk/src/$1',
+},
+```
+
+其中**不可使用**字符串形式 `'@garlic-claw/plugin-sdk'` 作为别名（会作为前缀匹配拦截所有子路径导入导致解析失败），必须使用正则的精确匹配锚点。
+
+---
+
+## 结论
+
+- **277/277 全部通过**，零失败、零跳过。
+- 覆盖 `@garlic-claw/plugin-sdk` 的 4 大模块共 21 个源文件（utils 4 个、host 3 个、client 4 个、authoring 10 个），含 4 个跨模块集成测试。
+- `toHostJsonValue` 已通过类型转换验证（Date→ISO、undefined 跳过、非纯对象→String）。
+- 消息过滤/命令匹配/WebSocket 常量等无运行时依赖的纯逻辑层已完全覆盖。
+- `authoring` 模块的 payload 读取器、结果生成函数、配置解析、子代理参数构造均通过边界值测试。
+- 测试在 `~1.5s` 内完成，适合集成到 CI 流程。
