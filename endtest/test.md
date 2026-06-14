@@ -4774,3 +4774,159 @@ Gemini 的认证方式是三者中最简单的：仅需 `x-goog-api-key` header�
 - server 测试套件中 `mcp-secret-store.service.ts` 的覆盖率缺口已关闭。
 - 测试在 `~1.5s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
 
+---
+
+---
+
+# server execution/project/ 模块测试报告
+
+> 测试时间: 2026-06-14  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: endtest/vitest.config.ts, 环境 jsdom  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 4 |
+| 测试套件总数 | 77 |
+| 通过套件 | 77 |
+| 失败套件 | 0 |
+| 测试用例总数 | 77 |
+| 通过用例 | 77 |
+| 失败用例 | 0 |
+| 运行耗时 | ~3.99 s |
+
+---
+
+## 测试覆盖范围
+
+### 1. ProjectWorktreeRootService - 22 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| findRoot | 4 | 返回最近 worktree root、缺少 server package.json 返回 null、无 package.json 返回 null、深层嵌套目录查找 |
+| resolveRoot | 4 | 无环境变量时 findRoot、GARLIC_CLAW_PROJECT_WORKTREE_PATH 优先、trim 环境变量值、空字符串环境变量回退 |
+| resolveProjectPath | 8 | 相对路径、绝对路径在项目内、拒绝项目外路径、拒绝 .. 超出项目、空字符串回退、undefined 回退、trim 路径空白、点路径表示根 |
+| toProjectRelativePath | 3 | 绝对路径到 POSIX 相对路径、根路径返回点、Windows 反斜杠替换 |
+| joinProjectRelativePath | 3 | 根路径使用子路径、嵌套路径拼接、深嵌套拼接 |
+
+### 2. ProjectWorktreeFileService - 26 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 路径解析 | 3 | 存在的文件、目录、不存在的路径返回 missing |
+| 目录读取 | 3 | 读取目录条目、字母序排列、目录名称后追加斜杠 |
+| 文件读取 | 3 | 读取文本文件、拒绝二进制文件、CRLF到LF转换 |
+| 文件写入 | 3 | 写入新文件、递归创建目录、覆盖已有文件 |
+| 文件编辑（文本替换） | 7 | 精确替换、replaceAll 多匹配、拒绝 oldString===newString、多行文本替换、找不到抛出错误、行末空白容忍替换、CRLF 标准化替换 |
+| 文件列表 | 4 | 多级目录递归列表、单文件路径、空目录返回空列表 |
+| 二进制检测 | 4 | 空缓冲区、含 null 字节、普通文本、大量不可打印字符 |
+
+### 3. ProjectWorktreePostWriteService - 16 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| JSON 格式化 | 6 | 格式化缩进、已格式化不变、保留末尾换行、非 json 不格式化、非法 JSON 静默、深度嵌套格式化 |
+| TypeScript 语法诊断（transpile-only） | 3 | 非法语法返回错误、合法语法无诊断、类型错误不体现（transpile-only 无类型检查） |
+| JSON 诊断 | 2 | 非法 JSON 返回诊断错误、合法 JSON 无诊断 |
+| 项目级诊断（含 tsconfig） | 4 | 跨文件类型错误检测、无 tsconfig 回退到语法诊断、当前文件错误优先、找到最近 tsconfig.json |
+| 路径规范化 | 1 | normalizeWorktreePath 解析 |
+
+### 4. ProjectWorktreeSearchOverlayService - 13 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| Overlay 渲染 | 3 | 项目 worktree 中返回 base+next-read overlay、非项目返回空 overlay、无 matches 只返回 base |
+| suggestReadPath 逻辑 | 6 | 高命中文件优先、命中相同浅路径优先、命中深度相同短路径优先、空 matches 返回 undefined、过滤空路径、virtualPath 对象输入 |
+| normalizeProjectRelativePath | 4 | 反斜杠到正斜杠、空路径返回点、正常路径不变、根相对路径保持 |
+
+---
+
+## 测试方法
+
+### 内联策略
+
+所有测试函数从以下源码文件对齐提取为内联实现：
+
+- project-worktree-root.service.ts: findRoot, resolveRoot, readConfiguredRoot - 纯文件系统扫描，无 NestJS 运行时依赖
+- project-worktree-file.service.ts: resolveProjectPath, toProjectRelativePath, joinProjectRelativePath - 路径安全与归一化函数
+- runtime-file-tree.ts: readRuntimeDirectoryEntryNames, readRuntimePathType, readRuntimeCheckedTextFile, containsRuntimeBinarySample - 文件系统读取操作
+- runtime-text-replace.ts: replaceRuntimeText - 多策略文本替换引擎（10 种匹配策略）
+- project-worktree-post-write.service.ts: processTextFile, formatJson, readDiagnostics, readSyntaxDiagnostics, readProjectDiagnostics, findNearestConfig, selectDiagnostics, mapDiagnostics, normalizeDiagnosticPath, normalizeWorktreePath, readSeverity - JSON 格式化与 TypeScript 诊断
+- project-worktree-search-overlay.service.ts: normalizeProjectRelativePath - 路径归一化
+- runtime-search-result-report.ts: readRuntimeSearchSuggestedReadPath - 搜索建议路径排序
+- host-path.ts: toHostPath - 虚拟路径到主机路径转换
+
+理由：所有服务类依赖 NestJS @nestjs/common、RuntimeSessionEnvironmentService、TypeScript 编译器 API 等运行时环境，内联后可零依赖运行。文件系统测试使用 os.tmpdir() 创建临时目录，测试完毕后清理。
+
+---
+
+## 发现的问题
+
+### 1. 无运行时问题
+
+77/77 测试全部通过，所有断言与实际代码行为一致。
+
+### 2. 路径安全守卫
+
+resolveProjectPath 通过两条规则保证路径安全：
+1. 绝对路径检查: 解析后的绝对路径必须以 projectRoot + path.sep 开头
+2. 路径逃逸拒绝: .. 相对路径超出项目根目录时抛出 BadRequestException
+
+trim 机制确保用户输入的前后空白不影响路径判断。
+
+### 3. 项目根发现
+
+findRoot 通过检测 package.json + packages/server/package.json 同时存在来确定 garlic-claw 项目根，支持环境变量 GARLIC_CLAW_PROJECT_WORKTREE_PATH 显式覆盖。
+
+### 4. 文本替换策略链
+
+replaceRuntimeText 按 10 种策略优先级依次尝试匹配，直到找到唯一匹配：
+
+| 优先级 | 策略 | 说明 |
+|--------|------|------|
+| 1 | exact | 精确匹配 |
+| 2 | escape-normalized | 转义符标准化 |
+| 3 | line-ending-normalized | 行尾标准化（CRLF/LF） |
+| 4 | trailing-whitespace-trimmed | 行末空白容忍 |
+| 5 | trimmed-boundary | 边界空白容忍 |
+| 6 | indentation-flexible | 缩进灵活 |
+| 7 | line-trimmed | 整行 trim |
+| 8 | context-aware | 上下文感知（3+行，固定长度） |
+| 9 | block-anchor | 块锚点（3+行，变长匹配） |
+| 10 | whitespace-normalized | 空白全部归一化 |
+
+### 5. 写入后诊断管道
+
+ProjectWorktreePostWriteService.processTextFile 提供统一的写入后处理管道：
+- JSON 文件: 自动格式化（pretty-print）+ JSON 语法校验
+- JS/TS 文件: transpile-only 语法诊断，如发现 tsconfig 则提升为全项目类型诊断
+- 其他文件: 跳过诊断
+
+项目级诊断通过 findNearestConfig 向上遍历目录查找 tsconfig.json / jsconfig.json，并使用自定义 CompilerHost 将当前编辑内容注入编译环境。
+
+### 6. 搜索 Overlay
+
+ProjectWorktreeSearchOverlayService.buildSearchOverlay 生成两种 overlay：
+- Project Base: 搜索路径相对于项目根的定位
+- Project Next Read: 基于 readRuntimeSearchSuggestedReadPath 按命中次数、深度、路径长度排序的推荐阅读路径
+
+当运行时工作区不属于项目 worktree（无 package.json + packages/server/package.json）时，overlay 为空。
+
+---
+
+## 结论
+
+- 77/77 用例全部通过，零失败、零跳过。
+- 覆盖 server/execution/project/ 模块的全部 5 个源码文件：
+  - project-worktree-root.service.ts -- project-worktree-root.spec.ts ，22 个用例
+  - project-worktree-file.service.ts -- project-worktree-file.spec.ts ，26 个用例
+  - project-worktree-post-write.service.ts -- project-worktree-post-write.spec.ts ，16 个用例
+  - project-worktree-search-overlay.service.ts -- project-worktree-search-overlay.spec.ts ，13 个用例
+- 涉及 runtime-file-tree.ts、runtime-text-replace.ts、runtime-search-result-report.ts、host-path.ts 等 4 个关联文件的内联测试。
+- server 模块测试清单中 execution/project/ 的覆盖缺口已关闭。
+- 测试在 ~3.99s 内完成，零外部运行时依赖，适合集成到 CI 流程。
