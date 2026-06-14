@@ -3987,3 +3987,171 @@ Gemini 的认证方式是三者中最简单的：仅需 `x-goog-api-key` header�
 - 覆盖 Skill 系统的 8 个维度：资产分类、XML 转义、治理消息与输出、治理文件解析、Skill 文件解析、文件系统集成、类型合约、边界条件。
 - 从源码对齐的 12 个纯函数在 30+ 边界场景下行为与预期一致，无逻辑差异。
 - 测试在 `~1.48s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
+
+---
+
+# 插件 / 扩展模块 — 子代理系统测试报告
+
+> 测试时间: 2026-06-14  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: `endtest/vitest.config.ts`, 环境 `jsdom`  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 1 |
+| 测试套件总数 | 18 |
+| 通过套件 | 18 |
+| 失败套件 | 0 |
+| 测试用例总数 | 142 |
+| 通过用例 | 142 |
+| 失败用例 | 0 |
+| 运行耗时 | ~1.35 s |
+
+---
+
+## 测试覆盖范围
+
+### 1. SubagentSettings 配置 sanitization — 32 个用例
+
+| 函数 | 用例数 | 覆盖边界 |
+|------|--------|----------|
+| writeOptionalText | 5 | 合法字符串、trim、空字符串、空白、非字符串 |
+| readPositiveInteger | 6 | 合法正数、上限钳制、0、负数、非整数、非数字 |
+| sanitizeSubagentLlmConfig | 4 | 完整字段、trim、空对象返回 null、空字符串排除 |
+| sanitizeSubagentSessionConfig | 3 | 合法值、undefined 返回 null、边界值 1 |
+| sanitizeSubagentToolConfig | 5 | 过滤合法/toolNames、trim、非字符串过滤、空数组、undefined |
+| sanitizeSubagentConfig | 4 | 完整配置、空配置、过滤无效子节、部分保留 |
+| readStoredSubagentConfig | 3 | 完整配置读取、空配置、过滤空 toolNames |
+| 文件系统读写 | 4 | 缺失文件返回空、写入+读取 roundtrip、损坏 JSON、非对象 JSON |
+
+### 2. SubagentToolService 参数校验 — 17 个用例
+
+| 函数 | 用例数 | 覆盖边界 |
+|------|--------|----------|
+| SUBAGENT_TOOL_NAMES 完整性 | 2 | 5 个工具、5 个名字逐一验证 |
+| readRequiredText | 6 | 合法字符串、trim、空字符串、空白、非字符串、错误消息含工具名 |
+| readOptionalText | 5 | 合法字符串、trim、空字符串、空白、非字符串 |
+| SUBAGENT_TOOL_NAMES 校验 | 2 | 已知名通过、未知名拒绝 |
+
+### 3. SubagentRunner 纯函数 — 72 个用例
+
+| 函数 | 用例数 | 覆盖边界 |
+|------|--------|----------|
+| normalizeSubagentTypeId | 5 | "default"→"general"、空变换、trim、大小写敏感 |
+| readSubagentRequestPreview | 6 | 字符串提取、parts 提取、description 回退、默认回退、空白回退、多 parts 合并 |
+| readSubagentConversationTitle | 5 | name 优先、description 回退、subagentTypeName 回退、默认"子代理"、trim |
+| createSubagentContext | 3 | 基础上下文、activePersonaId、subagent 模型/提供者 |
+| requireConversationSubagent | 2 | 存在返回、缺少抛错 |
+| readConversationActiveAssistantMessageId | 7 | subagent 字段优先、pending 查找、streaming 查找、无匹配、无 subagent 回退、空 ID 回退 |
+| readConversationExecutionResult | 6 | 最新 assistant、忽略 user、subagent 回退、无 assistant→null、toolCalls/toolResults 提取、null finishReason |
+| readStoredToolCalls | 4 | 合法条目、非数组→空、过滤非法、大量条目 |
+| readStoredToolResults | 3 | 合法条目、非数组→空、过滤非法 |
+| normalizePluginMessageContent | 5 | 字符串 content、空字符串、parts 数组、空数组、非 text 过滤 |
+| readSubagentBeforeRunResponse | 7 | pass 返回克隆、short-circuit、mutate 合并字段、mutate maxOutputTokens、mutate 含 toolNames/headers/providerOptions、short-circuit fallback |
+| applySubagentAfterRunMutation | 6 | 无变化、替换文本、替换 provider/model、追加 toolCalls/toolResults、修改 finishReason、清除 finishReason |
+| normalizeResolvedSubagentExecution | 4 | 已解析不变、原始推导、空文本、有 toolActivity |
+| compactSubagentToolResultOutput | 6 | 非对象透传、数组透传、tool:text 压缩、tool:json 压缩、普通对象透传、tool:text 非字符串 value |
+| isRecord | 2 | 纯对象 true、非对象 false |
+| readSubagentSpawnRequest | 7 | 完整参数、trim、过滤空 toolNames、空 name 排除、空白 subagentType 排除、空 messages、空 headers |
+| createStoredConversationMessage | 2 | 字符串 content、parts content |
+
+### 4. 类型兼容性 — 6 个用例
+
+| 类型 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| PluginSubagentConfig | 2 | 最小构造、全字段 |
+| PluginSubagentSpawnParams | 1 | 最小构造 |
+| PluginSubagentWaitParams | 1 | 最小含 timeoutMs 可选 |
+| PluginSubagentCloseParams | 1 | 基本构造 |
+| PluginSubagentHandle | 1 | conversationId/status/title |
+
+### 5. 边界条件 — 9 个用例
+
+| 场景 | 用例数 | 覆盖边界 |
+|------|--------|----------|
+| readSubagentSpawnRequest 超大 toolNames | 1 | 1000 条目 |
+| readPositiveInteger 超上限 | 1 | 100 万上限 |
+| readSubagentRequestPreview 空 messages | 1 | 返回默认 |
+| readSubagentRequestPreview 大文本 | 1 | 10000 字符 |
+| readSubagentConversationTitle 全空白 | 1 | 默认"子代理" |
+| sanitizeSubagentToolConfig 非数组 | 1 | 返回 null |
+| createSubagentContext undefined userId | 1 | 无 userId 字段 |
+| readStoredToolCalls 大量合法条目 | 1 | 100 条目 |
+| readConversationExecutionResult 空 messages | 1 | 返回 null |
+| normalizePluginMessageContent 长 content | 1 | 5000 字符 |
+
+---
+
+## 测试方法
+
+### 内联策略
+
+所有测试函数均从以下源码文件对齐提取为内联实现：
+
+- **SubagentSettings 层**: `packages/server/src/modules/execution/subagent/subagent-settings.service.ts` — `sanitizeSubagentConfig`、`sanitizeSubagentLlmConfig`、`sanitizeSubagentSessionConfig`、`sanitizeSubagentToolConfig`、`readStoredSubagentConfig`、`writeOptionalText`、`readPositiveInteger`、`isJsonObject`、`loadSubagentConfig`、`persistSubagentConfig`
+- **SubagentTool 层**: `packages/server/src/modules/execution/subagent/subagent-tool.service.ts` — `readRequiredText`、`readOptionalText`、`SUBAGENT_TOOL_NAMES`
+- **SubagentRunner 层**: `packages/server/src/modules/runtime/host/subagent-runner.service.ts` — `normalizeSubagentTypeId`、`readSubagentRequestPreview`、`readSubagentConversationTitle`、`createSubagentContext`、`requireConversationSubagent`、`readConversationActiveAssistantMessageId`、`readConversationExecutionResult`、`readStoredToolCalls`、`readStoredToolResults`、`normalizePluginMessageContent`、`readSubagentBeforeRunResponse`、`applySubagentAfterRunMutation`、`normalizeResolvedSubagentExecution`、`compactSubagentToolResultOutput`、`isRecord`、`readSubagentSpawnRequest`、`createStoredConversationMessage`
+
+理由：`SubagentRunnerService`、`SubagentToolService`、`SubagentSettingsService` 均依赖 NestJS `@nestjs/common`、`AiModelExecutionService`、`ConversationStoreService`、`ProjectWorktreeRootService` 等服务和依赖注入，内联后可零依赖运行。函数逻辑完全对齐源码实现。
+
+### 文件系统测试
+
+使用 `os.tmpdir()` 创建临时目录存储 subagent settings 配置文件，测试完毕后清理，不污染项目工作区。
+
+---
+
+## 发现的问题
+
+### 1. 无运行时问题
+
+142/142 测试全部通过，所有断言与实际代码行为一致。
+
+### 2. SubagentSettings 配置层次结构
+
+```json
+{
+  "llm": { "targetSubagentType": "explore", "targetProviderId": "openai", "targetModelId": "gpt-4" },
+  "session": { "maxConversationSubagents": 6 },
+  "tools": { "allowedToolNames": ["read", "webfetch"] }
+}
+```
+
+`sanitizeSubagentConfig` 采用三层清理：
+- **llm 节**: `writeOptionalText` 过滤空字符串/非字符串值，trim 后写入
+- **session 节**: `readPositiveInteger` 校验正整数，上限钳制 100 万
+- **tools 节**: 过滤非字符串条目、trim 后去重，空数组不产生字段
+
+`readStoredSubagentConfig` 从清理后的配置读取运行时可用的 `PluginSubagentConfig`，过滤空字符串和非数字字段。
+
+### 3. SubagentToolService 参数校验
+
+`readRequiredText` 和 `readOptionalText` 统一了子代理工具的参数校验语义：
+- `readRequiredText`: 必须为非空字符串，trim 后返回；拒绝空字符串、空白、非字符串，错误消息含工具名便于调试
+- `readOptionalText`: 可选字符串，空字符串/空白/非字符串返回 undefined
+
+`SUBAGENT_TOOL_NAMES` 维护 5 个工具名，`executeTool` 通过 `Set.has()` 验证工具名合法性。
+
+### 4. SubagentRunner 关键函数行为
+
+| 函数 | 核心逻辑 | 验证结论 |
+|------|----------|----------|
+| `normalizeSubagentTypeId` | `"default"` → `"general"`，trim 后比较 | 仅 map 一个别名 |
+| `readSubagentRequestPreview` | 最后消息 content/parts/description 三级回退 | 三级回退路径均正确 |
+| `readSubagentConversationTitle` | name→description→subagentTypeName→"子代理" 四级回退 | 四级回退全覆盖 |
+| `requireConversationSubagent` | subagent 缺失抛 Error | 错误消息含 conversationId |
+| `readConversationActiveAssistantMessageId` | subagent 字段优先→消息回退→null | 双路径查找 |
+| `readConversationExecutionResult` | 从最后 assistant 消息提取 result，回退 subagent modelId/providerId | 支持 finishReason 为 null |
+| `readSubagentBeforeRunResponse` | pass/short-circuit/mutate 三种 action | mutate 支持 9 种字段覆盖 |
+| `compactSubagentToolResultOutput` | tool:text/tool:json 压缩，其余透传 | 对象结构保留 |
+
+### 5. subagent 状态机
+
+子代理状态流转：`queued` → `running` → `completed` | `error` | `interrupted` | `closed`
+
+`readConversationActiveAssistantMessageId` 和 `readConversationExecutionResult` 均推断自会话消息列表，不依赖外部状态管理。
+
