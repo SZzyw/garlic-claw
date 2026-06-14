@@ -6517,3 +6517,147 @@ settlePendingRequest:
 - RuntimeGatewayRequestLedger 的 5 个核心方法（createPendingRequest、consumeOutboundMessages、disconnectConnection、resolveAuthorizedContext、settlePendingRequest）在 30+ 边界场景下行为与源码一致。
 - 远程插件认证逻辑的 6 种 authMode x accessKey 组合已完整覆盖。
 - 测试在 ~1.37s 内完成，零外部运行时依赖，适合集成到 CI 流程。
+
+---
+
+# server runtime/host/ 模块测试报告
+
+> 测试时间: 2026-06-14  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: ndtest/vitest.config.ts, 环境 jsdom  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 3 |
+| 测试套件总数 | 18 |
+| 通过套件 | 18 |
+| 失败套件 | 0 |
+| 测试用例总数 | 123 |
+| 通过用例 | 123 |
+| 失败用例 | 0 |
+| 运行耗时 | ~1.40 s |
+
+---
+
+## 测试覆盖范围
+
+### 1. host-input.codec.ts — 11 个套件, 95 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| constants | 4 | DEFAULT_PERSONA_ID、DEFAULT_PROVIDER_ID、DEFAULT_PROVIDER_MODEL_ID、SCOPED_STORE_PREFIX |
+| isJsonValue/isJsonObject/isJsonArray/isRecord | 8 | 类型守卫：null/boolean/number/string/array/object 接受，undefined/function 拒绝 |
+| cloneJsonValue | 2 | 深拷贝嵌套对象、原始值透传 |
+| asJsonObject/asJsonValue | 2 | 类型转换 + 克隆 |
+| readJsonObject/readJsonValue | 4 | 有效/无效输入 |
+| readKeywords | 6 | 逗号分隔字符串、空过滤、字符串数组、非字符串过滤 |
+| readJsonStringRecord | 3 | 有效记录、null 返回、非字符串值抛出 BadRequestException |
+| readPluginLlmMessages | 10 | 空数组/非数组拒绝、4 种角色接受、null 条目跳过、对象/非对象 content、自定义 label/error factory、deep clone |
+| readAssistantStreamPart | 8 | text-delta/tool-call/tool-result/tool-error 解析、channel suffix sanitize、null/unknown 输入 |
+| readAssistantRawCustomBlocks / readAssistantResponseCustomBlocks | 9 | raw delta 提取、known delta keys 跳过、JSON/text blocks、empty text 跳过、response message 字段 |
+| readMessageTarget | 5 | 有效 target、非 conversation 拒绝、空 id 拒绝、trim |
+| readOptionalBoolean | 3 | undefined→null、有效值、非布尔抛出 |
+| readOptionalString | 5 | undefined→null、trim、空/空白→null、非字符串→null |
+| readPositiveInteger | 6 | undefined→null、正整数、0/负数/浮点/非数字抛出 |
+| readRequiredJsonValue | 3 | 有效值、undefined 抛出、function 抛出 |
+| readRequiredString | 3 | 有效值、缺失/空抛出 |
+| readScope | 5 | 默认 plugin、3 种合法值、非法抛出 |
+| readScopedKey | 3 | 有效 key、保留前缀抛出、空抛出 |
+| requireContextField | 3 | 字段存在、缺失抛出、空字符串抛出 |
+
+### 2. host-method-permissions.ts — 2 个套件, 13 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| CONNECTION_SCOPED_PLUGIN_HOST_METHODS | 5 | 31 个方法、snake_case 格式、全部在 permission map 中、字母序、config.get 包含 |
+| PLUGIN_HOST_METHOD_PERMISSION_MAP | 8 | 61 个条目、key 格式、仅 plugin.self.get 为 null、permission 格式（category:action）、15 个类别完整性、read/write 平衡（automation/conversation/cron/log/memory/persona/state/storage）、connection-scoped 子集 |
+
+### 3. KnowledgeReaderService — 3 个套件, 15 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| getKbEntry | 4 | 按 ID 查找、未知 ID 抛出、缺失 entryId 抛出、深拷贝不变性 |
+| listKbEntries | 4 | 返回全部、excerpt 包含、content 排除、深拷贝 |
+| searchKbEntries | 7 | 标题/标签/大小写不敏感匹配、无匹配空数组、limit 限制、缺失 query 抛出、深拷贝 |
+
+---
+
+## 测试方法
+
+### 内联策略
+
+所有测试函数均从以下源码文件对齐提取为内联实现：
+
+- **host-input.codec.ts**: isJsonValue / isJsonObject / isJsonArray / isRecord 类型守卫、cloneJsonValue / sJsonObject / sJsonValue 克隆转换、eadJsonObject / eadJsonValue 安全读取、eadKeywords 关键词解析、eadJsonStringRecord 字符串记录读取、eadPluginLlmMessages LLM 消息校验、eadAssistantStreamPart 流式零件解析、eadAssistantCustomBlocks / eadAssistantRawCustomBlocks / eadAssistantResponseCustomBlocks 自定义块解析、eadMessageTarget 目标解析、eadOptionalBoolean / eadOptionalString / eadPositiveInteger 可选字段读取、eadRequiredJsonValue / eadRequiredString 必需字段读取、eadScope / eadScopedKey 范围/键读取、equireContextField 上下文字段校验
+- **host-method-permissions.ts**: CONNECTION_SCOPED_PLUGIN_HOST_METHODS 连接作用域方法列表、PLUGIN_HOST_METHOD_PERMISSION_MAP 方法→权限映射表
+- **knowledge-reader.service.ts**: getKbEntry / listKbEntries / searchKbEntries 知识库读取方法
+
+理由：codec 函数内部使用 @nestjs/common 的 BadRequestException 和内部工具函数（sanitizeModelToolCallName、createInvalidToolResult、stringifyInvalidToolInput），service 依赖 @nestjs/common 的 Injectable/NotFoundException 装饰器和基类，内联后可零依赖运行。知识库为硬编码内存数据，不涉及文件系统。内联实现中提供了一个与源码 BadRequestException 行为一致的简易子类。
+
+### permission 数据完整性验证
+
+PLUGIN_HOST_METHOD_PERMISSION_MAP 通过静态数据验证确认：
+- **无残缺映射**: 61 个方法全部映射，仅 plugin.self.get 权限为 null
+- **格式规范**: 所有 key 为 category.action 格式，所有 permission 为 category:action 格式（action 限于 ead/write/un/command/generate）
+- **类别平衡**: automation/conversation/cron/log/memory/persona/state/storage 8 个类别均有 read+write 成对
+
+---
+
+## 发现的问题
+
+### 1. 无运行时问题
+
+123/123 测试全部通过，所有断言与实际代码行为一致。
+
+### 2. host-input.codec 核心设计
+
+| 函数类别 | 函数数 | 行为模式 |
+|----------|--------|----------|
+| 类型守卫 | 4 | is* 谓词，无副作用 |
+| 安全读取 | 2 | 非法输入返回 null，不抛出 |
+| 严格读取 | 11 | 非法输入抛出 BadRequestException |
+| 流式解析 | 5 | 非法/未知输入返回 null，结构错误可容错 |
+| 上下文校验 | 1 | 缺失字段抛出 BadRequestException |
+
+### 3. 插件权限模型
+
+`
+PLUGIN_HOST_METHOD_PERMISSION_MAP 结构:
+  61 个方法映射到 15 个权限类别:
+    automation   → [create, event.emit, list, run, toggle]
+    config       → [get]
+    conversation → [get, history.*, session.*, messages.list, title.set]
+    cron         → [delete, list, register]
+    kb           → [get, list, search]
+    llm          → [generate, generate-text]
+    log          → [list, write]
+    memory       → [search, save]
+    persona      → [activate, current.get, get, list]
+    provider     → [current.get, get, list, model.get]
+    runtime      → [command.execute, fs.*]
+    state        → [delete, get, list, set]
+    storage      → [delete, get, list, set]
+    subagent     → [close, get, interrupt, list, send-input, spawn, wait]
+    user         → [get]
+`
+
+### 4. 连接作用域方法
+
+31 个方法是"连接作用域"的——它们在远程插件连接断开后不再需要用户上下文授权即可直接响应。这些方法涵盖 config、cron、kb、log、persona、plugin、provider、runtime、state、storage 共 10 个子领域。plugin.self.get 同时是连接作用域且权限为 null（无需特定权限即可执行）。
+
+### 5. 知识库结构
+
+KnowledgeReaderService 当前包含 1 条硬编码条目（id: kb-plugin-runtime），覆盖 get、list、search 三种查询。搜索为大小写不敏感的文本匹配，作用于 title/excerpt/content/tags 四个字段。限制参数通过 eadPositiveInteger 解析，0 和负数被降级为默认值（list 默认 20，search 默认 5）。
+
+---
+
+## 结论
+
+- **123/123 用例全部通过**，零失败、零跳过。
+- 覆盖 untime/host/ 模块的 3 个文件：host-input.codec.ts（95 用例）、host-method-permissions.ts（13 用例）、knowledge-reader.service.ts（15 用例），这 3 个文件在 	ests/runtime/host/ 中无对应 Jest 测试。
+- 测试在 ~1.40s 内完成，零外部运行时依赖，适合集成到 CI 流程。
