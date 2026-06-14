@@ -6028,3 +6028,173 @@ Controller 不包含任何业务逻辑，完全委托给 `SubagentRunnerService`
 - 覆盖 server 模块 `persona/` 的全部源码文件（controller/service/store/default-persona/4×DTO/module）。
 - 从源码对齐的 23 个纯函数 / 逻辑块在 16 大类 109 个边界场景下行为与预期一致。
 - 测试在 `~1.23s` 内完成，零外部运行时依赖（使用临时文件系统隔离），适合集成到 CI 流程。
+
+---
+
+# server/plugin/builtin/ 内置插件测试报告
+
+> 测试时间: 2026-06-14  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: `endtest/vitest.config.ts`, 环境 `jsdom`  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 1 |
+| 测试套件总数 | 4 |
+| 通过套件 | 4 |
+| 失败套件 | 0 |
+| 测试用例总数 | 36 |
+| 通过用例 | 36 |
+| 失败用例 | 0 |
+| 运行耗时 | ~1.33 s |
+
+---
+
+## 测试覆盖范围
+
+### 1. BuiltinPluginDefinition 类型 — 2 个用例
+
+| 场景 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 扩展 PluginAuthorDefinition | 1 | `manifest.id` 字段可访问 |
+| 带 governance 完整构造 | 1 | `governance.builtinRole` 支持 `system-optional` |
+
+### 2. BUILTIN_MEMORY_PLUGIN — 10 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| manifest 元数据 | 1 | id/name/description/version/runtime |
+| governance 配置 | 1 | builtinRole/canDisable/defaultEnabled |
+| 权限 | 1 | memory:read / memory:write |
+| 无 hooks/config | 2 | manifest.config/hooks 均为空 |
+| tool 参数 schema | 1 | save_memory/search_memory 参数定义完整性 |
+| save_memory 全参数 | 1 | 含 category/content/keywords 调用 host.saveMemory |
+| save_memory 无可选参数 | 1 | 仅 content 必需 |
+| save_memory 缺失 content | 1 | 抛出 `content 必填` |
+| search_memory 返回格式 | 1 | 两条记忆格式化输出 |
+| search_memory 空结果 | 1 | 返回 `{ count: 0, memories: [] }` |
+| search_memory 缺失 query | 1 | 抛出 `query 必填` |
+
+### 3. BUILTIN_AUTOMATION_PLUGIN — 10 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| manifest 元数据 | 1 | id/name/description/version/runtime |
+| governance 配置 | 1 | builtinRole/canDisable/defaultEnabled |
+| 权限与工具数量 | 1 | automation:read/write，唯一工具 create_automation |
+| 参数 schema | 1 | 7 个参数 required 标记正确性 |
+| cron + ai_message 流程 | 1 | 完整调用返回 `{ created, id, name }` |
+| event + device_command 流程 | 1 | 另一种触发/动作组合 |
+| manual 触发无可选字段 | 1 | 最小输入 |
+| host.createAutomation 参数校验 | 1 | trigger/actions 形状准确传递 |
+| 缺失 name | 1 | 抛出 `name 必填` |
+| 缺失 trigger_type | 1 | 抛出 `trigger_type 必填` |
+| 缺失 action_type | 1 | 抛出 `action_type 必填` |
+
+### 4. BuiltinPluginRegistryService 逻辑 — 14 个用例
+
+| 函数 | 用例数 | 覆盖边界 |
+|------|--------|----------|
+| hasDefinition | 3 | 存在的 ID 返回 true、未知 ID 返回 false、空字符串 |
+| getDefinition | 3 | 返回克隆对象、克隆独立性（修改不影响原对象）、未知 ID 返回 undefined |
+| listDefinitions | 2 | 返回全部 2 个定义（automation/memory）、克隆独立性 |
+| listRetiredPluginIds | 2 | 返回 6 个已退役 ID、包含已知 ID |
+| cloneDefinition | 3 | 相等且独立、tools 浅拷贝保留引用、无 governance 时返回 undefined |
+
+---
+
+## 测试方法
+
+### 直接导入策略
+
+不同于其他 server 模块测试的内联策略，`plugin/builtin/` 的测试直接导入源码常量：
+
+```typescript
+import { BUILTIN_MEMORY_PLUGIN } from '../packages/server/src/modules/plugin/builtin/builtin-memory.plugin';
+import { BUILTIN_AUTOMATION_PLUGIN } from '../packages/server/src/modules/plugin/builtin/builtin-automation.plugin';
+```
+
+可行原因：builtin plugin 定义不依赖 NestJS 运行时（无 `@Injectable`/`@nestjs/common` 装饰器），仅引用 `@garlic-claw/plugin-sdk` 中的纯函数工具，这些工具已通过 vitest 别名解析。
+
+### Registry 逻辑内联
+
+`BuiltinPluginRegistryService` 依赖 NestJS `@nestjs/common`（`Injectable`、`NotFoundException`），因此将业务逻辑提取为纯函数测试：
+
+- `hasDefinition` / `getDefinition` / `listDefinitions` — 从 registry 服务提取
+- `cloneDefinition` — 深度克隆函数
+- `RETIRED_BUILTIN_PLUGIN_IDS` — 已退役插件 ID 常量验证
+
+### 工具函数 mock
+
+对于 BUILTIN_MEMORY_PLUGIN 和 BUILTIN_AUTOMATION_PLUGIN 的 tool handler 测试，使用 mock host 对象注入 `PluginAuthorExecutionContext`，沿用 server 测试套件 `builtin-memory.plugin.spec.ts` 的 mock 模式。
+
+---
+
+## 发现的问题
+
+### 1. 无运行时问题
+
+36/36 测试全部通过，所有断言与实际代码行为一致。
+
+### 2. 内存插件 `save_memory` 参数逻辑
+
+`save_memory` 的 `category` 和 `keywords` 为可选参数，源码中通过简写条件表达式控制：
+
+```typescript
+...(readOptionalStringParam(params, 'category') ? { category: readOptionalStringParam(params, 'category') ?? undefined } : {}),
+```
+
+这意味着空字符串/空白 `category` 会被 `readOptionalStringParam` 返回原值（而非 null），但因 `?!` 条件被排除。此逻辑与 manifest 中 `category.required = undefined` 一致。
+
+### 3. 自动化插件的 trigger/action 条件覆盖
+
+`create_automation` 的 trigger 构造逻辑为串联 `if/else if`：
+
+| trigger_type | 可选字段 | 优先级 |
+|-------------|----------|--------|
+| `cron` | trigger_cron | cron 分支生效，event 分支跳过 |
+| `event` | trigger_event | event 分支生效，cron 分支跳过 |
+| `manual` | 都不填 | 仅有 `{ type: 'manual' }` |
+
+测试覆盖了全部三种 trigger_type 分支，以及 action_type 的 `ai_message` / `device_command` 两种分支。
+
+### 4. registry 克隆策略
+
+`cloneBuiltinDefinition` 使用 `structuredClone` 对 manifest/governance 做深拷贝，对 tools/hooks/routes 做浅拷贝（保留函数引用）。此策略确保 manifest 元数据不可变，而 tool handler 函数引用共享，避免不必要的内存开销。
+
+### 5. 已退役插件
+
+6 个已退役的内置插件 ID 被常量 `RETIRED_BUILTIN_PLUGIN_IDS` 维护：
+- `builtin.memory-context` / `builtin.memory-tools` / `builtin.runtime-tools`
+- `builtin.subagent-delegate` / `builtin.conversation-title` / `builtin.context-compaction`
+
+这些 ID 在 registry 的 `listRetiredPluginIds()` 中返回，用于迁移/兼容性逻辑。
+
+---
+
+## 覆盖缺口关闭
+
+根据 `项目模块与环境.md` 的覆盖缺口清单，本次测试关闭了 server 模块 `plugin/builtin/` 的以下未测试文件：
+
+| 文件 | 测试覆盖 |
+|------|---------|
+| `builtin-automation.plugin.ts` | ✅ manifest/governance/tools 结构 (5 用例) + create_automation 全部 3 种 trigger + 2 种 action 组合 (5 用例) + 缺失参数异常 (3 用例) |
+| `builtin-memory.plugin.ts` | ✅ manifest/governance/tools 结构 (5 用例) + save_memory/search_memory 完整/最小/异常路径 (5 用例) |
+| `builtin-plugin-definition.ts` | ✅ 类型接口结构验证 (2 用例) |
+| `builtin-plugin-registry.service.ts` | ✅ 业务逻辑纯函数：查询/列举/克隆/退役 ID (14 用例) |
+
+---
+
+## 结论
+
+- **36/36 用例全部通过**，零失败、零跳过。
+- 覆盖 `server/plugin/builtin/` 的全部 4 个源码文件，含 2 个插件定义 + 1 个类型接口 + 1 个注册服务。
+- **BUILTIN_MEMORY_PLUGIN**: 10 个用例覆盖 manifest 元数据、governance、参数 schema、save_memory 完整/最小/缺失参数、search_memory 正常/空结果/缺失参数。
+- **BUILTIN_AUTOMATION_PLUGIN**: 10 个用例覆盖 manifest 元数据、governance、参数 schema、cron+ai_message / event+device_command / manual 三组流程、host.createAutomation 参数形状、缺失 3 个必需参数的异常。
+- **Registry 服务**: 14 个用例覆盖 hasDefinition、getDefinition、listDefinitions、listRetiredPluginIds、cloneDefinition 五项操作的正常/边界路径。
+- 测试在 `~1.33s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
