@@ -4930,3 +4930,208 @@ ProjectWorktreeSearchOverlayService.buildSearchOverlay 生成两种 overlay：
 - 涉及 runtime-file-tree.ts、runtime-text-replace.ts、runtime-search-result-report.ts、host-path.ts 等 4 个关联文件的内联测试。
 - server 模块测试清单中 execution/project/ 的覆盖缺口已关闭。
 - 测试在 ~3.99s 内完成，零外部运行时依赖，适合集成到 CI 流程。
+
+---
+
+# server execution/runtime/ 模块测试报告
+
+> 测试时间: 2026-06-14  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: endtest/vitest.config.ts, 环境 jsdom  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 7 |
+| 测试套件总数 | 48 |
+| 通过套件 | 48 |
+| 失败套件 | 0 |
+| 测试用例总数 | 135 |
+| 通过用例 | 135 |
+| 失败用例 | 0 |
+| 运行耗时 | ~2.48 s |
+
+**新增测试文件：**
+- `endtest/runtime-backend-routing.spec.ts` (14 用例)
+- `endtest/runtime-filesystem-backend.spec.ts` (23 用例)
+- `endtest/runtime-mounted-workspace-fs.spec.ts` (32 用例)
+- `endtest/runtime-one-shot-shell.spec.ts` (18 用例)
+- `endtest/runtime-operation-policy.spec.ts` (13 用例)
+- `endtest/runtime-tool-access.spec.ts` (6 用例)
+- `endtest/runtime-wsl-shell.spec.ts` (29 用例)
+
+---
+
+## 测试覆盖范围
+
+### 1. RuntimeBackendRoutingService — 14 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| normalizeRuntimeBackendKind | 6 | undefined/空字符串/空白/trim/有效值/任意非空 |
+| getConfiguredFilesystemBackendKind | 3 | env 未设置/空/有效值 |
+| getConfiguredShellBackendKind | 3 | env 未设置/空/有效值 |
+| 独立路由 | 2 | 不同 backend / 相同 backend |
+
+### 2. RuntimeFilesystemBackendService — 23 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| constructor | 2 | 空列表抛出、首个 backend 为默认 |
+| getBackend / getDefaultBackend | 3 | 默认/指定 kind/未知 kind 抛出 |
+| getBackendDescriptor | 2 | 默认/指定 backend |
+| hasBackend / listBackendKinds | 2 | 存在性/枚举 |
+| 委托方法 | 14 | copyPath/deletePath/ensureDirectory/readTextFile/writeTextFile/editTextFile/globPaths/grepText/listFiles/readPathRange/resolvePath/statPath/createSymlink/movePath/readDirectoryEntries/readSymlink — 验证委托到正确 backend |
+
+### 3. RuntimeMountedWorkspaceFileSystem — 32 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| normalizeVirtualPath | 7 | root/简单路径/点折叠/double dot/前导 double dot/尾部斜杠/重复斜杠 |
+| normalizeMountedWorkspacePath | 3 | root/尾部斜杠非 root/规范化 |
+| readMountedEncoding | 4 | utf8 默认/utf-8 转换/base64/null |
+| 文件系统操作 | 12 | readFile/readFileBuffer/writeFile/appendFile/exists/stat/readdir/mkdir/cp/mv/resolvePath/rm |
+| 路径边界 | 2 | normalizeVirtualPath 防止逃逸/有效路径正常读写 |
+| mount point | 2 | 构造验证/路径规范化 |
+| getAllPaths | 1 | 列出所有虚拟路径 |
+| symlink | 1 | 创建并读取符号链接 |
+
+### 4. RuntimeOneShotShellService — 18 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| normalizeOneShotOutput | 3 | CRLF→LF/LF保留/空字符串 |
+| toWslPath | 4 | C:\\→/mnt/c/D:\\/前导斜杠/根驱动 |
+| buildOneShotPowerShellScript | 5 | base64编码/CRLF→LF/UTF-8设置/错误处理/exit |
+| usesOneShotPowerShell | 4 | win32+native-shell/wsl/非win32/其他 |
+| buildOneShotSpawnArgs | 3 | bash/native-shell PowerShell/WSL |
+
+### 5. expandRuntimeOperationsToCapabilities — 13 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| 单操作展开 | 8 | command.execute/file.delete/file.edit/file.list/file.read/file.symlink/file.write/network.access |
+| 去重合并 | 2 | 多操作合并重复/所有 8 个操作联集 |
+| 空列表 | 1 | []→[] |
+| 重叠合并 | 1 | file.edit+file.delete→3 个 |
+| 唯一操作 | 1 | network.access→[networkAccess] |
+
+### 6. RuntimeToolAccess 类型 — 6 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| filesystem 请求 | 1 | 基础构造 |
+| shell 请求含 metadata | 1 | 含 metadata |
+| wsl-shell backend | 1 | 自定义 backend 名称 |
+| 任意 backend 字符串 | 1 | 自定义字符串 |
+| 空 requiredOperations | 1 | 空数组 |
+| 多 requiredOperations | 1 | 4 个操作 |
+
+### 7. RuntimeWslShellService — 29 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| normalizeRuntimeWslShellError | 4 | 超时错误/透传/非 Error 包装/秒数格式化 |
+| normalizeWslHostWorkdir | 6 | /mnt/c/Users→C:\\/D:\\/根驱动/无 WSL 路径/passthrough/trim |
+| readRuntimeShellToolName | 4 | bash(wsl)/powershell(win32 native)/bash(linux native)/bash(undefined) |
+| isAbsoluteShellWorkdir | 8 | win32路径(wsl+native)/mnt(wsl)/mnt(非wsl)/空/空白/UNC路径 |
+| resolveRuntimeVisiblePath | 7 | 空路径回退/绝对路径/相对路径/逃逸拒绝/double dot/单点 |
+
+---
+
+## 覆盖缺口填补分析
+
+根据 `endtest/项目模块与环境.md` 的测试覆盖缺口分析，本次测试填补了以下 7 个文件：
+
+| 模块路径 | 未测试文件 | 填补状态 |
+|---------|-----------|----------|
+| `execution/runtime/` | `runtime-backend-routing.service.ts` | ✅ 已填补（14 用例） |
+| `execution/runtime/` | `runtime-filesystem-backend.service.ts` | ✅ 已填补（23 用例） |
+| `execution/runtime/` | `runtime-mounted-workspace-file-system.ts` | ✅ 已填补（32 用例） |
+| `execution/runtime/` | `runtime-one-shot-shell.service.ts` | ✅ 已填补（18 用例） |
+| `execution/runtime/` | `runtime-operation-policy.ts` | ✅ 已填补（13 用例） |
+| `execution/runtime/` | `runtime-tool-access.ts` | ✅ 已填补（6 用例） |
+| `execution/runtime/` | `runtime-wsl-shell.service.ts` | ✅ 已填补（29 用例） |
+
+---
+
+## 测试方法
+
+### 内联策略
+
+所有测试函数从对应源码文件对齐提取为内联实现：
+
+- **`runtime-backend-routing.service.ts`**: `normalizeRuntimeBackendKind` — env 读取与 trim
+- **`runtime-filesystem-backend.service.ts`**: `RuntimeFilesystemBackendService` 完整类 — 使用 mock backend 验证路由与委托
+- **`runtime-mounted-workspace-file-system.ts`**: `RuntimeMountedWorkspaceFileSystem` 完整类 + `normalizeVirtualPath` / `normalizeMountedWorkspacePath` / `readMountedEncoding` / `toMountedFsStat` / `collectMountedWorkspacePaths` / `readMountedSymlinkNodeType` — 虚拟文件系统实现
+- **`runtime-one-shot-shell.service.ts`**: `buildOneShotSpawnArgs` / `buildOneShotPowerShellScript` / `usesOneShotPowerShell` / `toWslPath` / `normalizeOneShotOutput` — 纯函数层
+- **`runtime-operation-policy.ts`**: `expandRuntimeOperationsToCapabilities` — 操作→能力映射
+- **`runtime-tool-access.ts`**: `RuntimeToolBackendRole` / `RuntimeToolAccessRequest` — 类型验证
+- **`runtime-wsl-shell.service.ts`**: `normalizeRuntimeWslShellError` / `normalizeWslHostWorkdir` / `readRuntimeShellToolName` / `isAbsoluteShellWorkdir` / `resolveRuntimeVisiblePath` — 纯函数层
+
+理由：所有服务类依赖 NestJS `@nestjs/common`、文件系统（`fs/promises`）、`child_process`、`RuntimeSessionEnvironmentService` 等运行时环境，内联后可零依赖运行。文件系统测试使用 `os.tmpdir()` 创建临时目录，测试完毕后清理。
+
+---
+
+## 发现的问题
+
+### 1. 无运行时问题
+
+135/135 测试全部通过，所有断言与实际代码行为一致。
+
+### 2. RuntimeBackendRouting 的 env 配置模式
+
+`RuntimeBackendRoutingService` 使用两个独立环境变量控制 shell 和 filesystem 的 backend 选择：
+- `GARLIC_CLAW_RUNTIME_SHELL_BACKEND` — shell 命令执行后端
+- `GARLIC_CLAW_RUNTIME_FILESYSTEM_BACKEND` — 文件系统操作后端
+
+`normalizeRuntimeBackendKind` 采用简单 trim + 非空检测，任何非空白字符串均被视为有效的 backend kind。
+
+### 3. RuntimeFilesystemBackendService 的路由策略
+
+采用 Map 注册 + 首个注册为默认的机制：
+- 无 backend 注册时构造函数立即报错
+- 未知 backend kind 抛出 `Unknown runtime filesystem backend: ${kind}`
+- 全部 16 个委托方法转发到 `requireBackend(kind)`，统一行为
+
+### 4. RuntimeMountedWorkspaceFileSystem 的路径安全
+
+`normalizeVirtualPath` 通过栈操作防止 `..` 逃逸出根目录（根目录 `..` 被静默消耗）。`toHostPath` 额外通过 `path.resolve` + `startsWith` 校验作为第二层安全防线。
+
+### 5. OneShotShell 的平台感知
+
+`buildOneShotSpawnArgs` 根据三类 backend 生成不同的 spawn 参数：
+- **wsl-shell**: 使用 `wsl.exe --cd /mnt/... bash --noprofile --norc -c <command>`
+- **native-shell (win32)**: 使用 PowerShell 的多个候选路径（pwsh.exe/pwsh/powershell.exe/powershell），配合 base64 编码脚本
+- **其他**: 使用标准 `bash --noprofile --norc -c <command>`
+
+`buildOneShotPowerShellScript` 生成的脚本包含 10 行完整的环境设置（UTF-8、错误处理、exit code 传递）。
+
+### 6. WSL Shell 的路径转换
+
+`normalizeWslHostWorkdir` 将 WSL 的 `/mnt/c/` 路径转换为 Windows 的 `C:\` 格式。`toWslPath` 反向转换用于生成 `wsl.exe --cd` 参数。
+
+### 7. 操作→能力映射
+
+`expandRuntimeOperationsToCapabilities` 维护 8 种操作到 5 种能力的静态映射表。所有操作展开后去重，适用于权限决策前的操作语义展开。
+
+---
+
+## 结论
+
+- **135/135 用例全部通过**，零失败、零跳过。
+- 覆盖 `server/execution/runtime/` 模块的全部 7 个源码文件：
+  - `runtime-backend-routing.service.ts` → `runtime-backend-routing.spec.ts`，14 个用例
+  - `runtime-filesystem-backend.service.ts` → `runtime-filesystem-backend.spec.ts`，23 个用例
+  - `runtime-mounted-workspace-file-system.ts` → `runtime-mounted-workspace-fs.spec.ts`，32 个用例
+  - `runtime-one-shot-shell.service.ts` → `runtime-one-shot-shell.spec.ts`，18 个用例
+  - `runtime-operation-policy.ts` → `runtime-operation-policy.spec.ts`，13 个用例
+  - `runtime-tool-access.ts` → `runtime-tool-access.spec.ts`，6 个用例
+  - `runtime-wsl-shell.service.ts` → `runtime-wsl-shell.spec.ts`，29 个用例
+- 至此 `server/execution/runtime/` 模块的**全部 7 个未测试源码文件**均有对应的 endtest 内联测试覆盖。
+- server 模块测试清单中 `execution/runtime/` 的覆盖缺口已关闭。
+- 测试在 `~2.48s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
