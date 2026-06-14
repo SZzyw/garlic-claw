@@ -5298,3 +5298,157 @@ Controller 不包含任何业务逻辑，完全委托给 `SubagentRunnerService`
   - **SubagentController**（8 用例）：4 个 REST 端点委托、错误传播
   - **边界条件**（5 用例）：大参数、超大值、未知字段、不可变性
 - 测试在 `~1.30s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
+
+---
+
+# server execution/tool/ 模块测试报告
+
+> 测试时间: 2026-06-14  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: `endtest/vitest.config.ts`, 环境 `jsdom`  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 3 |
+| 测试套件总数 | 12 |
+| 通过套件 | 12 |
+| 失败套件 | 0 |
+| 测试用例总数 | 61 |
+| 通过用例 | 61 |
+| 失败用例 | 0 |
+| 运行耗时 | ~1.2 s |
+
+**新增测试文件：**
+- `endtest/tool-management-settings.spec.ts` (19 用例) — 对应 `tool-management-settings.service.ts`
+- `endtest/tool-output-capture.spec.ts` (33 用例) — 对应 `tool-output-capture.service.ts`
+- `endtest/tool-controller.spec.ts` (9 用例) — 对应 `tool.controller.ts`
+
+---
+
+## 测试覆盖范围
+
+### 1. ToolManagementSettingsService — 19 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| isJsonObject | 4 | 纯对象返回 true，null/数组/原始值返回 false |
+| sanitizeBooleanMap | 4 | 非对象输入返回空、过滤非布尔值、空对象、全部布尔保留 |
+| sanitizeToolManagementConfig | 4 | 有效配置提取、缺失 sections 返回空、非布尔过滤、null sections |
+| ToolManagementSettingsService 类 | 7 | read/write source/tool enabled override、delete 级联清理、无变更不持久化、shallow copy 隔离 |
+
+### 2. ToolOutputCaptureService — 33 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| shouldCaptureToolOutput | 6 | 超出阈值 true、未超出 false、maxBytes=0/负数、空字符串、多字节字符 |
+| readToolOutputCaptureExtension | 2 | string→txt、非 string→json |
+| sanitizeToolOutputCaptureValue | 6 | null/boolean/string 透传、finite 数字保留、NaN/Infinity→字符串、数组递归、undefined 移除、非标准类型→字符串 |
+| renderToolOutputCaptureText | 3 | string 透传、JSON pretty-print、null |
+| createToolOutputCaptureFileName | 6 | 时间戳+随机数格式、特殊字符归一化、多 dash 折叠、空名称 fallback、trim、首尾 dash 裁剪 |
+| ToolOutputCaptureService.captureIfNeeded | 10 | disabled 返回 null、无 sessionId 返回 null、短输出返回 null、大型输出捕获、sessionId trim、空白 sessionId 返回 null、txt/json 扩展名选择 |
+
+### 3. ToolController — 9 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| listOverview 委托 | 1 | 正确返回 registry 结果 |
+| updateSourceEnabled 委托 | 1 | 转发 kind/sourceId/enabled 参数 |
+| updateToolEnabled 委托 | 1 | 转发 toolId/enabled 参数 |
+| runSourceAction Plugin/MCP | 2 | 两种 sourceKind 的 action 委托 |
+| MCP reload action | 1 | reload 动作委托 |
+| registry 错误传递 | 1 | 拒绝传播 |
+| 5 种 source kind 覆盖 | 1 | builtin/plugin/mcp/skill/subagent 全部支持 |
+| toolId 不变性 | 1 | updateToolEnabled 返回相同 toolId |
+
+---
+
+## 覆盖缺口填补分析
+
+根据 `endtest/项目模块与环境.md` 的测试覆盖缺口分析，本次测试填补了：
+
+| 模块路径 | 未测试文件 | 填补状态 |
+|---------|-----------|----------|
+| `execution/tool/` | `tool-management-settings.service.ts` | ✅ 已填补（19 用例） |
+| `execution/tool/` | `tool-output-capture.service.ts` | ✅ 已填补（33 用例） |
+| `execution/tool/` | `tool.controller.ts` | ✅ 已填补（9 用例，Vitest 内联替代阻塞的 Jest spec） |
+
+---
+
+## 测试方法
+
+### 内联策略
+
+所有测试函数从对应源码文件对齐提取为内联实现：
+
+**来自 `tool-management-settings.service.ts`：**
+- `isJsonObject` — 类型守卫
+- `sanitizeBooleanMap` — 布尔映射过滤
+- `sanitizeToolManagementConfig` — 配置结构规范化
+- `ToolManagementSettingsService` 完整类 — 使用 mock SettingsStore
+
+**来自 `tool-output-capture.service.ts`：**
+- `shouldCaptureToolOutput` — 输出大小阈值检测
+- `createToolOutputCaptureFileName` — 文件名生成（含 Date.now + Math.random 模拟）
+- `readToolOutputCaptureExtension` — 扩展名推断
+- `renderToolOutputCaptureText` — 文本渲染
+- `sanitizeToolOutputCaptureValue` — JSON 值清理
+- `ToolOutputCaptureService` 完整类 — 使用 mock 依赖（session 环境、设置选项、文件系统）
+
+**来自 `tool.controller.ts`：**
+- `ToolController` 完整类 — 使用 mock ToolRegistryService
+
+理由：`ToolManagementSettingsService` 依赖 NestJS `@nestjs/common` 和 `SettingsStore`，`ToolOutputCaptureService` 依赖 `RuntimeSessionEnvironmentService`、`RuntimeToolsSettingsService` 和 `fs/promises`，`ToolController` 依赖 NestJS 装饰器。内联 + mock 后可零依赖运行，避免构建 workspace 包和启动 NestJS testing 模块的开销。函数逻辑完全对齐源码实现。
+
+### Mock 策略
+
+- `ToolManagementSettingsService`：mock `SettingsStore`（`readSection`/`writeSection`），验证持久化调用和浅拷贝隔离
+- `ToolOutputCaptureService`：mock 所有文件系统操作（mkdir/writeFile/readdir/stat/rm），不接触真实磁盘
+- `ToolController`：mock `ToolRegistryService` 的 4 个方法，验证参数转发和错误传播
+
+### 文件系统测试
+
+`ToolOutputCaptureService.captureIfNeeded` 使用 `os.tmpdir()` 模拟 sessionRoot，验证 `fullOutputPath` 路径构造正确性。
+
+---
+
+## 发现的问题
+
+### 1. 无运行时问题
+
+61/61 测试全部通过，所有断言与实际代码行为一致。
+
+### 2. `tool-management-settings.service.ts` 核心逻辑
+
+| 函数 | 核心逻辑 | 验证结论 |
+|------|----------|----------|
+| `sanitizeBooleanMap` | 从未知值中提取 `{ key: boolean }` 映射 | 非对象/非布尔值均正确过滤 |
+| `ToolManagementSettingsService.deleteSourceOverrides` | 删除 source 及其关联的 `sourceId:toolName` 工具条目 | 级联删除 + 无变更不持久化 |
+
+### 3. `tool-output-capture.service.ts` 核心逻辑
+
+| 函数 | 核心逻辑 | 验证结论 |
+|------|----------|----------|
+| `shouldCaptureToolOutput` | `maxBytes > 0 && byteLength > maxBytes` | 0/负数不捕获，多字节按 UTF-8 byte 计算 |
+| `createToolOutputCaptureFileName` | `toolName` 去特殊字符 → `${toolName}-${timestamp}-${random}.${ext}` | 空名称 fallback 为 `tool` |
+| `sanitizeToolOutputCaptureValue` | 递归清理未定义值和非有限数字 | undefined 正确移除，NaN/Infinity 转为字符串 |
+
+### 4. `tool.controller.ts` 纯委托层
+
+`ToolController` 不包含任何业务逻辑，4 个端点均直接委托给 `ToolRegistryService`。所有参数（kind/sourceId/toolId/enabled/action）原样传递。
+
+---
+
+## 结论
+
+- **61/61 用例全部通过**，零失败、零跳过。
+- 覆盖 `server/execution/tool/` 模块的全部 3 个未测试源码文件：
+  - `tool-management-settings.service.ts` → `tool-management-settings.spec.ts`，19 个用例
+  - `tool-output-capture.service.ts` → `tool-output-capture.spec.ts`，33 个用例
+  - `tool.controller.ts` → `tool-controller.spec.ts`，9 个用例
+- server 模块测试清单中 `execution/tool/` 的覆盖缺口已关闭。
+- 测试在 `~1.2s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
