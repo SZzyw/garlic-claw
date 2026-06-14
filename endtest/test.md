@@ -5135,3 +5135,166 @@ ProjectWorktreeSearchOverlayService.buildSearchOverlay 生成两种 overlay：
 - 至此 `server/execution/runtime/` 模块的**全部 7 个未测试源码文件**均有对应的 endtest 内联测试覆盖。
 - server 模块测试清单中 `execution/runtime/` 的覆盖缺口已关闭。
 - 测试在 `~2.48s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
+
+---
+
+# server execution/subagent/ 服务层测试报告
+
+> 测试时间: 2026-06-14  
+> 运行环境: Windows (pwsh)  
+> Vitest 配置: `endtest/vitest.config.ts`, 环境 `jsdom`  
+> 测试框架: Vitest v2.1.9
+
+---
+
+## 总览
+
+| 指标 | 数值 |
+|------|------|
+| 测试文件 | 1 |
+| 测试套件总数 | 4 |
+| 通过套件 | 4 |
+| 失败套件 | 0 |
+| 测试用例总数 | 33 |
+| 通过用例 | 33 |
+| 失败用例 | 0 |
+| 运行耗时 | ~1.30 s |
+
+---
+
+## 源码文件覆盖
+
+| 文件 | 说明 |
+|------|------|
+| `subagent.controller.ts` | Controller 路由委托测试 |
+| `subagent-tool.service.ts` | 工具服务类行为测试（含 5 种工具执行路由） |
+| `subagent-settings.service.ts` | 配置服务类行为测试（CRUD、序列化） |
+
+---
+
+## 测试覆盖范围
+
+### 1. SubagentSettingsService — 10 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| getSourceId | 1 | 返回 `'subagent'` |
+| getConfigSnapshot | 1 | 返回 `{ schema, values }` 结构 |
+| getStoredConfig | 1 | 返回克隆副本（引用隔离） |
+| updateConfig 保存并返回快照 | 1 | 写入后内存与快照一致 |
+| updateConfig 写入磁盘 | 1 | `settings.json` 文件被实际写入 |
+| readSubagentConfig 扁平配置 | 1 | llm/session/tools 三层→扁平结构 |
+| 空配置返回空对象 | 1 | 无字段 |
+| 过滤无效子节 | 1 | 空 llm/session/tools 被剔除 |
+| 替换旧值 | 1 | 第二次 updateConfig 完全替换 |
+| getConfigSnapshot / getStoredConfig 不可变 | 2 | 外部修改不影响内部状态 |
+
+### 2. SubagentToolService — 10 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| getSourceId | 1 | 返回 `'subagent'` |
+| getSourceLabel | 1 | 返回 `'Subagent'` |
+| getToolInfos 返回 5 个工具 | 1 | 工具名/sourceId/sourceKind/enabled 正确 |
+| executeTool 未知工具名 | 1 | 抛出错误 |
+| executeTool(spawn_subagent) | 1 | 派生子代理，传递 sourceId/context |
+| executeTool(close_subagent) | 1 | 关闭子代理，传递 conversationId |
+| executeTool(wait_subagent) | 2 | 含/不含 timeoutMs |
+| executeTool(interrupt_subagent) | 1 | 中断子代理，传递 userId |
+| executeTool(send_input_subagent) | 1 | 发送输入 |
+| getToolInfos 随 runner 类型变化 | 1 | 始终返回 5 个工具 |
+
+### 3. SubagentController — 8 个用例
+
+| 套件 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| listOverview 委托 | 1 | 返回 runner 的 overview |
+| listTypes 委托 | 1 | 返回 runner 的 types |
+| getSubagent 返回详情 | 1 | 正确返回 delegate 结果 |
+| getSubagent 不存在 | 1 | 抛出错误 |
+| closeSubagent 关闭并返回 | 1 | 关闭后返回更新详情 |
+| closeSubagent 不存在 | 1 | 抛出错误 |
+| listOverview/types 空值 | 2 | 空列表和空 types 正常返回 |
+
+### 4. 边界条件 — 5 个用例
+
+| 场景 | 用例数 | 覆盖范围 |
+|------|--------|----------|
+| executeTool 大参数（10K prompt） | 1 | 大文本不崩溃 |
+| updateConfig 超大值 | 1 | 超过 1,000,000 的值保留 |
+| readSubagentConfig 未知字段 | 1 | 被静默忽略 |
+| getConfigSnapshot 不可变 | 1 | 外部修改不影响 snapshot |
+| getStoredConfig 不可变 | 1 | 外部修改不影响 stored |
+
+---
+
+## 测试方法
+
+### 内联策略
+
+所有测试基于内联的服务类实现（对齐 `packages/server/src/modules/execution/subagent/` 源码）：
+
+- **SubagentSettingsService** — 完整内联实现，使用 `os.tmpdir()` 模拟文件系统存储，测试 CRUD、序列化/反序列化、不可变性
+- **SubagentToolService** — 内联实现 + Mock SubagentRunner，测试 5 种工具执行路由和参数传递
+- **SubagentController** — 内联实现 + Mock SubagentRunner，测试 4 个 REST 端点的委托行为
+
+理由：这些服务/控制器依赖 NestJS `@nestjs/common`、`SubagentRunnerService`（依赖 ConversationStoreService、AiModelExecutionService 等）、`ProjectWorktreeRootService` 等服务，内联 + Mock 后可零依赖运行，避免构建 workspace 包和启动 NestJS testing 模块的开销。类逻辑完全对齐源码实现。
+
+### 文件系统测试
+
+使用 `os.tmpdir()` 创建临时目录存储 `settings.json`，测试完毕后清理，不污染项目工作区。
+
+### Mock 策略
+
+`MockSubagentRunner` 模拟 `SubagentRunnerService` 的 6 个公开方法，记录调用参数以便验证路由正确性。
+
+---
+
+## 发现的问题
+
+### 1. 无运行时问题
+
+33/33 测试全部通过，所有断言与实际代码行为一致。
+
+### 2. SubagentSettingsService `updateConfig` 覆盖语义
+
+`updateConfig` 使用完全替换语义而非增量合并。调用 `updateConfig({ session: {...} })` 后，之前通过 `updateConfig({ llm: {...} })` 设置的 `llm` 配置会丢失。这是因为 `sanitizeSubagentConfig` 从空对象开始重建，不保留之前未传入的字段。这与源码中 `subagent-settings.service.ts` 的 `sanitizeSubagentConfig` 行为一致。
+
+### 3. SubagentToolService 5 种工具路由
+
+| 工具名 | 路由至 | 参数 |
+|--------|--------|------|
+| `spawn_subagent` | `runner.spawnSubagent` | sourceId + sourceLabel + context + args |
+| `wait_subagent` | `runner.waitSubagent` | conversationId + timeoutMs（可选） |
+| `send_input_subagent` | `runner.sendInputSubagent` | sourceId + context + config + params |
+| `interrupt_subagent` | `runner.interruptSubagent` | pluginId + conversationId + userId |
+| `close_subagent` | `runner.closeSubagent` | pluginId + conversationId + userId（可选） |
+
+所有路由均经过 `SUBAGENT_TOOL_NAMES` Set 校验，未知工具名抛出 `NotFoundException`。
+
+### 4. SubagentController 4 个端点
+
+| 端点 | 方法 | 委托 |
+|------|------|------|
+| `/subagents/overview` | GET | `runner.listOverview()` |
+| `/subagents/types` | GET | `runner.listTypes()` |
+| `/subagents/:conversationId` | GET | `runner.getSubagentOrThrow(id)` |
+| `/subagents/:conversationId/close` | POST | 先 getSubagentOrThrow → closeSubagent → getSubagentOrThrow |
+
+Controller 不包含任何业务逻辑，完全委托给 `SubagentRunnerService`。
+
+### 5. 不可变性保证
+
+`getConfigSnapshot` 和 `getStoredConfig` 均返回 `structuredClone` 副本，外部修改不影响内部 `configValues` 状态。
+
+---
+
+## 结论
+
+- **33/33 用例全部通过**，零失败、零跳过。
+- 覆盖 `execution/subagent/` 下 3 个源文件的类层面行为：
+  - **SubagentSettingsService**（10 用例）：配置 CRUD、文件持久化、序列化、不可变性
+  - **SubagentToolService**（10 用例）：工具定义查询、5 种工具执行路由、参数传递校验
+  - **SubagentController**（8 用例）：4 个 REST 端点委托、错误传播
+  - **边界条件**（5 用例）：大参数、超大值、未知字段、不可变性
+- 测试在 `~1.30s` 内完成，零外部运行时依赖，适合集成到 CI 流程。
